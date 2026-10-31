@@ -1,0 +1,83 @@
+OmniMed Synthetic Medical Knowledge Base
+
+Cardiovascular Risk and Diabetes
+
+Patients with diabetes have an increased risk of cardiovascular disease. Cardiovascular risk assessment should consider symptoms, medical history, cardiovascular risk factors, vital signs, laboratory investigations, and relevant diagnostic studies. Diabetes should therefore be considered when assessing the overall cardiovascular risk profile of a patient.
+
+Hypertension is another important cardiovascular risk factor. Repeated blood pressure measurements should be interpreted together with the patient's overall clinical condition rather than as an isolated measurement. Persistent elevation in blood pressure may contribute to cardiovascular and renal complications.
+
+Chest Discomfort
+
+Chest discomfort can have multiple causes. Cardiovascular causes should be considered when the clinical presentation and available investigations support such a possibility. Chest discomfort should not be interpreted using a single symptom in isolation.
+
+Important clinical information may include symptom onset, duration, character, severity, associated symptoms, previous episodes, relevant medical history, vital signs, electrocardiographic findings, and laboratory results.
+
+A clinical decision-support system should distinguish between information that is directly observed and conclusions that require clinical interpretation.
+
+Cardiac Biomarkers and Troponin
+
+Cardiac troponin measurements may provide useful information when evaluating suspected myocardial injury. Serial measurements can provide information about changes over time, while an isolated measurement may provide less information about temporal change.
+
+An increase or decrease in troponin should be interpreted in the context of symptoms, electrocardiographic findings, clinical history, and other available investigations. Elevated troponin does not by itself establish a single definitive clinical diagnosis.
+
+When serial laboratory values are available, trends should be considered rather than relying only on one measurement.
+
+Electrocardiography
+
+An electrocardiogram may provide important information when evaluating patients with chest discomfort or other possible cardiovascular symptoms. ECG findings should be interpreted together with symptoms, medical history, vital signs, and laboratory findings.
+
+An abnormal ECG may increase clinical concern in an appropriate context, but an automated system should not treat an isolated ECG finding as a definitive diagnosis.
+
+Previous ECG results may provide useful comparison information when available. Missing previous investigations should therefore be identified as potentially relevant missing information.
+
+Kidney Function
+
+Kidney function can be assessed using laboratory measurements such as serum creatinine and estimated glomerular filtration rate. Changes in kidney-related laboratory values may be clinically relevant when evaluating a patient's evolving condition.
+
+A change in creatinine should be interpreted in relation to the patient's baseline value, hydration status, medications, comorbidities, and other clinical information.
+
+When kidney function information is incomplete, a clinical decision-support system should identify the missing information rather than assuming a normal or abnormal value.
+
+Medication Safety
+
+Medication information is important when evaluating a patient's clinical state. Current medications, medication doses, recent changes, adherence, allergies, and known contraindications may affect clinical interpretation.
+
+A decision-support system should not invent medication use or assume that a medication caused a clinical finding without supporting evidence.
+
+When medication information is unavailable, the system should identify current medication information as missing rather than generating an unsupported assumption.
+
+Clinical Evidence and Uncertainty
+
+Clinical decision-support systems should provide evidence and uncertainty to clinicians rather than making autonomous clinical decisions.
+
+Evidence retrieved from a knowledge base should be clearly separated from patient-specific observations. Retrieved evidence should not be presented as if it were directly observed in the patient.
+
+The system should identify uncertainty when the available patient information is incomplete, conflicting, or insufficient to support a strong clinical conclusion.
+
+Patient-specific clinical decisions should remain under clinician oversight.
+
+Longitudinal Patient Monitoring
+
+Clinical information can change over time. New laboratory results, vital signs, symptoms, medications, imaging findings, and other clinical information may alter the interpretation of a patient's current state.
+
+A longitudinal clinical decision-support system should compare new information with previously available patient information. Important changes should be highlighted for clinician review.
+
+Trends may be more informative than isolated measurements when sufficient historical information is available.
+
+Care-Plan Reassessment
+
+A clinician-approved care plan represents the current intended management approach for a patient. When new clinically relevant information becomes available, the system may identify whether the new information could affect the existing care plan.
+
+The system should generate a reassessment prompt for clinician review rather than automatically changing the care plan.
+
+A reassessment should identify the new information, explain why it may be relevant, retrieve supporting evidence when available, and identify important uncertainties or missing information.
+
+The clinician should remain responsible for accepting, editing, or rejecting any proposed change.
+
+Safety Principles
+
+OmniMed is designed as a clinical decision-support prototype rather than an autonomous medical system. It should not independently diagnose disease, prescribe medication, issue treatment orders, or replace professional clinical judgment.
+
+The system should use supplied patient information and retrieved evidence. Unsupported assumptions should be avoided. When evidence is insufficient, the system should explicitly communicate uncertainty.
+
+Clinical outputs should be traceable to patient information and supporting evidence whenever possible.

@@ -1,0 +1,132 @@
+# ==========================================
+# NODE.JS / NEXT.JS
+# ==========================================
+
+# Dependencies
+**/node_modules/
+**/.pnp
+**/.pnp.*
+**/.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Next.js
+**/.next/
+**/out/
+
+# Build files
+**/build/
+**/dist/
+
+# Testing
+**/coverage/
+
+# Vercel
+.vercel/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+
+# ==========================================
+# PYTHON / FASTAPI
+# ==========================================
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python packaging
+build/
+dist/
+*.egg-info/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Type checking / linting
+.mypy_cache/
+.ruff_cache/
+.pyright/
+
+
+# ==========================================
+# ENVIRONMENT VARIABLES / SECRETS
+# ==========================================
+
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Allow example environment files
+!.env.example
+!**/.env.example
+
+# Private keys and certificates
+*.pem
+*.key
+
+
+# ==========================================
+# DATABASE / LOCAL DATA
+# ==========================================
+
+*.db
+*.sqlite
+*.sqlite3
+
+# Local database directories
+instance/
+
+# ==========================================
+# LOGS / DEBUG
+# ==========================================
+
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+
+# ==========================================
+# IDE / EDITORS
+# ==========================================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+
+# ==========================================
+# OPERATING SYSTEM
+# ==========================================
+
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+
+# ==========================================
+# UPLOADS / SENSITIVE PATIENT DATA
+# ==========================================
+
+# Local uploaded patient documents
+uploads/
+private_uploads/
+# Local Qdrant vector database
+**/qdrant/

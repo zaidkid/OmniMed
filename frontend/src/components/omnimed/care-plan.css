@@ -1,0 +1,69 @@
+/* Care plan UI. Purple = AI-generated draft, always reviewed by a clinician. */
+:root {
+  --cp-purple: #7c6cf0;
+  --cp-purple-soft: rgba(124, 108, 240, 0.12);
+  --cp-purple-line: rgba(124, 108, 240, 0.45);
+  --cp-line: rgba(128, 128, 128, 0.28);
+  --cp-ok: #2fa36b;
+  --cp-bad: #d4524a;
+}
+
+/* ---------- Flow strip ---------- */
+.cp-flow { display: flex; align-items: stretch; gap: 8px; flex-wrap: wrap; padding: 14px 22px 4px; }
+.cp-node { flex: 1 1 130px; min-width: 120px; border: 1px solid var(--cp-line); border-radius: 10px; padding: 10px 12px; text-align: center; }
+.cp-node b { display: block; font-size: 13px; }
+.cp-node small { opacity: 0.7; font-size: 11.5px; }
+.cp-node.ai { background: var(--cp-purple-soft); border-color: var(--cp-purple-line); }
+.cp-arrow { align-self: center; opacity: 0.55; }
+.cp-evid { flex-basis: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; opacity: 0.8; padding-top: 4px; }
+.cp-legend { display: flex; align-items: center; gap: 8px; font-size: 12px; opacity: 0.8; padding: 4px 22px 10px; margin: 0; }
+.cp-legend i { width: 12px; height: 12px; border-radius: 3px; background: var(--cp-purple); display: inline-block; }
+
+/* ---------- Draft banner ---------- */
+.cp-draft { border-left: 3px solid var(--cp-purple); background: var(--cp-purple-soft); padding: 10px 14px; margin: 6px 22px 10px; border-radius: 0 8px 8px 0; font-size: 13px; }
+.cp-draft.approved { border-left-color: var(--cp-ok); background: rgba(47, 163, 107, 0.12); }
+
+/* ---------- Action rows ---------- */
+.cp-row { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: start; padding: 10px 22px; border-top: 1px solid var(--cp-line); }
+.cp-row.approved { background: rgba(47, 163, 107, 0.07); }
+.cp-row.rejected .cp-text { text-decoration: line-through; opacity: 0.55; }
+.cp-text { font-size: 14px; line-height: 1.45; }
+.cp-edited { font-size: 11px; color: var(--cp-purple); margin-left: 6px; }
+.cp-btns { display: flex; gap: 4px; }
+.cp-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--cp-line); background: transparent; color: inherit; cursor: pointer; }
+.cp-icon:hover { border-color: var(--cp-purple-line); background: var(--cp-purple-soft); }
+.cp-icon.on-ok { background: var(--cp-ok); border-color: var(--cp-ok); color: #fff; }
+.cp-icon.on-bad { background: var(--cp-bad); border-color: var(--cp-bad); color: #fff; }
+.cp-edit { grid-column: 2 / 4; display: grid; gap: 6px; }
+.cp-edit textarea { width: 100%; min-height: 64px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--cp-purple-line); background: transparent; color: inherit; font: inherit; }
+.cp-edit-actions { display: flex; gap: 6px; }
+
+/* ---------- Review footer ---------- */
+.cp-review { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 22px; border-top: 1px solid var(--cp-line); }
+.cp-review p { margin: 0; font-size: 12.5px; opacity: 0.8; }
+.cp-approve { border: 0; border-radius: 10px; padding: 9px 16px; font-weight: 600; cursor: pointer; background: var(--cp-purple); color: #fff; }
+.cp-approve:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ---------- Process card ---------- */
+.cp-proc { border: 1px solid var(--cp-purple-line); background: var(--cp-purple-soft); border-radius: 14px; padding: 14px 16px; margin: 12px 0; }
+.cp-proc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.cp-proc-head h4 { margin: 2px 0 0; font-size: 15px; }
+.cp-proc-right { display: flex; align-items: center; gap: 10px; }
+.cp-k { margin: 0; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cp-purple); font-weight: 700; }
+.cp-time { font-variant-numeric: tabular-nums; font-size: 13px; opacity: 0.8; }
+.cp-steps { list-style: none; margin: 12px 0 4px; padding: 0; display: grid; gap: 6px; }
+.cp-step { display: flex; align-items: center; gap: 10px; font-size: 13px; opacity: 0.55; }
+.cp-step.active, .cp-step.done { opacity: 1; }
+.cp-dot { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; border: 1px solid var(--cp-line); }
+.cp-step.active .cp-dot { border-color: var(--cp-purple); color: var(--cp-purple); }
+.cp-step.done .cp-dot { background: var(--cp-purple); border-color: var(--cp-purple); color: #fff; }
+.cp-err { color: var(--cp-bad); font-size: 13px; margin: 8px 0 0; }
+.cp-det { margin-top: 8px; font-size: 12.5px; }
+.cp-det summary { cursor: pointer; opacity: 0.85; }
+.cp-det pre { max-height: 220px; overflow: auto; white-space: pre-wrap; word-break: break-word; margin: 6px 0 0; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--cp-line); font-size: 12px; }
+.cp-log { list-style: none; margin: 6px 0 0; padding: 0; max-height: 160px; overflow: auto; font-size: 12px; }
+.cp-log li { padding: 2px 0; }
+.cp-log li.warn { color: #d9a13b; }
+.cp-log li.error { color: var(--cp-bad); }
+.cp-log li.ok { color: var(--cp-ok); }
+.cp-log time { opacity: 0.55; margin-right: 6px; }
