@@ -46,6 +46,9 @@ OLLAMA_MODEL = os.getenv(
     "qwen3:4b"
 )
 
+# Optional multimodal model; deliberately separate from the text-only model.
+OLLAMA_VISION_MODEL = os.getenv("OLLAMA_VISION_MODEL", "").strip()
+
 REQUIRE_EVIDENCE_FOR_CLINICAL_OUTPUT = (
     os.getenv(
         "REQUIRE_EVIDENCE_FOR_CLINICAL_OUTPUT",

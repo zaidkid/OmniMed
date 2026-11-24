@@ -229,16 +229,22 @@ export default function SettingsPage() {
       const { data, ms } = llm.value;
       const status = field(data, "status");
       const model = field(data, "model");
+      const runtime = field(data, "runtime");
       const text = typeof status === "string" ? status : "";
       const state: State = OK.test(text) ? "online" : BAD.test(text) ? "offline" : "unknown";
+      const loaded = field(runtime, "loaded") === true;
+      const gpu = field(runtime, "gpu_percent");
+      const runtimeSummary = loaded
+        ? typeof gpu === "number" ? `${gpu}% GPU memory` : "GPU allocation unknown"
+        : "not loaded yet";
       next.push({
         ...base("llm"),
         state,
         summary:
           state === "online"
-            ? `${model ? String(model) : "Model"} is loaded and responding`
+            ? `${model ? String(model) : "Model"} available · ${runtimeSummary}`
             : state === "offline"
-              ? "Model service is disconnected"
+              ? text === "unavailable" ? `${String(model ?? "Configured model")} is not installed in Ollama` : "Model service is disconnected"
               : "Reachable, but readiness not confirmed",
         detail: data,
         ms,
@@ -257,7 +263,7 @@ export default function SettingsPage() {
         state: "online",
         summary:
           typeof items === "number"
-            ? `${items.toLocaleString()} evidence items indexed`
+            ? `${items.toLocaleString()} evidence passages indexed`
             : "Knowledge service reachable",
         detail: data,
         ms,

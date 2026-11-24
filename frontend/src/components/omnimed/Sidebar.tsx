@@ -10,6 +10,7 @@ const links = [
   { label: "Clinical Workspace", href: "/", icon: Home },
   { label: "Evidence Search", href: "/evidence", icon: Search },
   { label: "Patient Library", href: "/documents", icon: UserRound },
+  { label: "Reassessment", href: "/reassessment", icon: Activity },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 

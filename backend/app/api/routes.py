@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import io
 import json
 import logging
 import time
@@ -27,13 +28,15 @@ from pydantic import BaseModel, Field
 
 from app.core import db
 
-from app.core.config import OLLAMA_MODEL, UPLOAD_DIR
+from app.core.config import OLLAMA_MODEL, OLLAMA_VISION_MODEL, UPLOAD_DIR
 
 from app.services.models.models import (
     PatientInput,
+    PatientState,
     CarePlanInput,
     CarePlanGenerationRequest,
     ReassessmentRequest,
+    ReassessmentDecisionRequest,
     ClinicalBriefRequest,
     EvidenceSearchRequest,
     EvidenceIndexRequest,
@@ -63,7 +66,8 @@ from app.services.evidence.report_parser import (
 )
 
 from app.services.evidence.evidence import (
-    index_evidence,
+    evidence_status,
+    index_text_evidence,
     search_evidence,
 )
 
@@ -83,7 +87,10 @@ except ImportError:
 
 from app.services.reassessment import reassess
 
-from app.services.ai.llm import check_ollama, ollama_warm_up
+from app.services.ai.llm import (
+    check_ollama, ollama_model_status, ollama_warm_up, ollama_generate,
+    ollama_generate_from_image,
+)
 
 
 log = logging.getLogger(__name__)
@@ -110,6 +117,21 @@ class ImproveExtractionRequest(BaseModel):
     structured_report: dict
 
     model: str | None = None
+
+
+class DocumentSummaryRequest(BaseModel):
+    extracted_text: str = Field(min_length=1, max_length=100_000)
+    filename: str = Field(default="uploaded document", max_length=255)
+
+
+class DocumentVisionRequest(BaseModel):
+    document_id: str = Field(min_length=1, max_length=100)
+    patient_id: str = Field(min_length=1, max_length=200)
+
+
+class ReassessmentExtractRequest(BaseModel):
+    filename: str = Field(default="report", max_length=255)
+    extracted_text: str = Field(min_length=1, max_length=30000)
 
 
 def _text_usable(text: str) -> bool:
@@ -146,6 +168,18 @@ def _stage(
 
 def _ms(started: float) -> int:
     return int((time.perf_counter() - started) * 1000)
+
+
+def _to_vision_png(path: Path) -> bytes:
+    from PIL import Image
+
+    with Image.open(path) as image:
+        if image.width * image.height > 50_000_000:
+            raise ValueError("Image dimensions exceed the analysis limit")
+        image = image.convert("RGB")
+        output = io.BytesIO()
+        image.save(output, format="PNG", optimize=True)
+        return output.getvalue()
 
 
 def _extract_text_for_upload(
@@ -496,8 +530,10 @@ async def upload_document(
             detail="Maximum upload size is 25 MB.",
         )
 
-    # Load the model while the document is being extracted, so generation has no cold start.
-    background_tasks.add_task(ollama_warm_up)
+    # Avoid loading the text-only model for image uploads; image analysis uses
+    # its own configured vision model and loading both wastes local memory.
+    if suffix not in IMAGE_SUFFIXES:
+        background_tasks.add_task(ollama_warm_up)
 
     document_id = str(uuid.uuid4())
 
@@ -558,18 +594,23 @@ async def upload_document(
     ocr_pages: list[int] = extracted["ocr_pages"]
     ocr_failed: dict[int, str] = extracted["ocr_failed"]
 
-    # No text is a real failure (and is not an HTTPException caught by a broad
-    # except, which previously rewrote this message and deleted the file).
+    # Keep images even when OCR has nothing to extract; vision analysis can
+    # still inspect their pixels. Empty non-image documents remain invalid.
     if not extracted_text or not extracted_text.strip():
-        destination.unlink(missing_ok=True)
-        reasons = " ".join(extraction_warnings[:3])
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "No readable text was extracted from this document."
-                + (f" {reasons}" if reasons else "")
-            ),
-        )
+        if suffix in IMAGE_SUFFIXES:
+            extraction_warnings.append(
+                "No text was detected by OCR. The image was retained for optional vision-model analysis."
+            )
+        else:
+            destination.unlink(missing_ok=True)
+            reasons = " ".join(extraction_warnings[:3])
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "No readable text was extracted from this document."
+                    + (f" {reasons}" if reasons else "")
+                ),
+            )
 
     stages.append(
         _stage(
@@ -720,6 +761,8 @@ async def upload_document(
         "document_id": document_id,
         "patient_id": patient_id,
         "filename": original,
+        "vision_available": bool(OLLAMA_VISION_MODEL) and suffix in IMAGE_SUFFIXES,
+        "vision_model": OLLAMA_VISION_MODEL if suffix in IMAGE_SUFFIXES else None,
         "characters_extracted": len(
             extracted_text
         ),
@@ -824,6 +867,126 @@ async def improve_document_extraction(
     }
 
 
+@router.post("/documents/summarize")
+async def summarize_document(request: DocumentSummaryRequest):
+    """Summarize extracted text; this endpoint does not interpret image pixels."""
+    schema = {
+        "type": "object",
+        "properties": {
+            "summary": {"type": "string"},
+            "key_findings": {"type": "array", "items": {"type": "string"}},
+            "uncertainties": {"type": "array", "items": {"type": "string"}},
+            "review_note": {"type": "string"},
+        },
+        "required": ["summary", "key_findings", "uncertainties", "review_note"],
+    }
+    prompt = (
+        "Summarize only clinical facts explicitly present in the extracted text. Do not infer a diagnosis, "
+        "treatment, or missing value. Preserve units and dates. Keep it brief. If the source is an image, "
+        "state this is an OCR-text summary and does not interpret the image itself. Return the requested JSON.\n\n"
+        f"Document: {request.filename}\nExtracted text:\n{request.extracted_text[:24000]}"
+    )
+    try:
+        raw = await ollama_generate(prompt, schema, num_predict=240, temperature=0.1)
+        result = json.loads(raw)
+    except Exception as exc:
+        log.exception("Document text summarization failed")
+        raise HTTPException(status_code=502, detail=f"Could not summarize extracted text: {type(exc).__name__}") from exc
+    return {**result, "source": "extracted_text", "image_interpreted": False}
+
+
+@router.post("/reassessment/extract")
+async def extract_reassessment_facts(request: ReassessmentExtractRequest):
+    """Extract report facts as unverified proposals for clinician confirmation."""
+    schema = {
+        "type": "object",
+        "properties": {
+            "conditions": {"type": "array", "items": {"type": "string"}},
+            "medications": {"type": "array", "items": {"type": "string"}},
+            "allergies": {"type": "array", "items": {"type": "string"}},
+            "symptoms": {"type": "array", "items": {"type": "string"}},
+            "vitals": {"type": "object", "additionalProperties": {"type": "string"}},
+            "labs": {"type": "array", "items": {"type": "object", "properties": {
+                "name": {"type": "string"}, "value": {"type": "string"}, "unit": {"type": "string"}
+            }, "required": ["name", "value", "unit"]}},
+            "clinical_notes": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["conditions", "medications", "allergies", "symptoms", "vitals", "labs", "clinical_notes"],
+    }
+    prompt = (
+        "Extract only explicit patient facts and changes stated in this report. Do not infer or diagnose. "
+        "Do not copy generic reference ranges as patient results. Preserve medication dose, lab units, and values. "
+        "Leave absent facts empty. These are unverified proposals for clinician review. Return JSON only.\n\n"
+        f"Report: {request.filename}\n{request.extracted_text[:24000]}"
+    )
+    try:
+        raw = await ollama_generate(prompt, schema, num_predict=500, temperature=0.0)
+        facts = json.loads(raw)
+    except Exception as exc:
+        log.exception("Reassessment report extraction failed")
+        raise HTTPException(status_code=502, detail=f"Could not extract report facts ({type(exc).__name__}).") from exc
+    return {**facts, "review_required": True, "extraction_source": "llm_report_text"}
+
+
+@router.post("/documents/vision-summarize")
+async def summarize_medical_image(request: DocumentVisionRequest):
+    """Generate cautious image observations from a configured Ollama vision model."""
+    if not OLLAMA_VISION_MODEL:
+        raise HTTPException(
+            status_code=503,
+            detail="Image analysis is not configured. Set OLLAMA_VISION_MODEL to an installed Ollama vision model and restart the backend.",
+        )
+    document = db.get_patient_document(request.document_id, request.patient_id.strip())
+    if not document:
+        raise HTTPException(status_code=404, detail="Image not found for this patient.")
+    path = Path(document["path"])
+    if path.suffix.lower() not in IMAGE_SUFFIXES or not path.is_file():
+        raise HTTPException(status_code=422, detail="The selected document is not an available image.")
+    if path.stat().st_size > 25 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Image exceeds the 25 MB analysis limit.")
+
+    # Normalize supported raster formats for Ollama's image input. Keep original
+    # dimensions; do not resize away potentially relevant details.
+    try:
+        image_bytes = await run_in_threadpool(_to_vision_png, path)
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=f"Could not prepare image for analysis ({type(exc).__name__}).") from exc
+
+    schema = {
+        "type": "object",
+        "properties": {
+            "summary": {"type": "string"},
+            "observed_features": {"type": "array", "items": {"type": "string"}},
+            "image_quality": {"type": "string"},
+            "possible_modality": {"type": "string"},
+            "uncertainties": {"type": "array", "items": {"type": "string"}},
+            "clinician_review_questions": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["summary", "observed_features", "image_quality", "possible_modality", "uncertainties", "clinician_review_questions"],
+    }
+    prompt = (
+        "Describe visible image features cautiously and only as observations. Do not diagnose, rule out disease, "
+        "recommend treatment, or claim certainty. If the image is a radiograph, note that this is an AI-generated "
+        "preliminary observation and not a radiologist report. State limitations, image quality concerns, and what "
+        "a qualified clinician/radiologist should verify. If modality or anatomy is unclear, say so. Return only the requested JSON."
+    )
+    try:
+        generated = await ollama_generate_from_image(prompt, image_bytes, schema)
+        result = json.loads(generated["text"])
+    except Exception as exc:
+        log.exception("Vision analysis failed for uploaded image")
+        raise HTTPException(status_code=502, detail=f"Vision model could not analyze this image ({type(exc).__name__}).") from exc
+    return {
+        **result,
+        "document_id": request.document_id,
+        "filename": document["filename"],
+        "model": generated["model"],
+        "image_interpreted": True,
+        "diagnostic": False,
+        "clinician_review_required": True,
+    }
+
+
 @router.get("/documents")
 def get_documents(
     patient_id: Optional[str] = None,
@@ -836,13 +999,15 @@ def get_documents(
 def add_evidence(
     request: EvidenceIndexRequest,
 ):
-
-    return index_evidence(
-        request.title,
-        request.source,
-        request.text,
-        request.metadata,
-    )
+    try:
+        return index_text_evidence(
+            request.title,
+            request.source,
+            request.text,
+            request.metadata,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.post("/evidence/search")
@@ -861,28 +1026,33 @@ def evidence_search(
 
 @router.get("/knowledge/status")
 def knowledge_status():
-
+    status = evidence_status()
     return {
-        "indexed_evidence_items": len(
-            db.list_evidence()
-        )
+        **status,
+        # Backward-compatible field used by the evidence and settings pages.
+        "indexed_evidence_items": status.get("vectors_count", 0),
     }
 
 
 @router.get("/ai/status")
 async def ai_status():
-
     try:
-
+        tags = await check_ollama()
+        available_models = {
+            str(item.get("name") or item.get("model") or "")
+            for item in tags.get("models", [])
+            if isinstance(item, dict)
+        }
+        model_available = OLLAMA_MODEL in available_models or f"{OLLAMA_MODEL}:latest" in available_models
+        runtime = await ollama_model_status()
         return {
-            "status": "connected",
+            "status": "connected" if model_available else "unavailable",
             "provider": "Ollama",
             "model": OLLAMA_MODEL,
-            "ollama": await check_ollama(),
+            "model_available": model_available,
+            "runtime": runtime,
         }
-
     except Exception as exc:
-
         return {
             "status": "disconnected",
             "provider": "Ollama",
@@ -897,6 +1067,10 @@ async def clinical_brief_stream(
     request: ClinicalBriefRequest,
 ):
     """Stream NDJSON progress, model fragments, backend logs, and the validated result."""
+    db.upsert_patient(
+        request.patient_state.patient_id,
+        request.patient_state.model_dump(),
+    )
 
     async def event_stream():
         try:
@@ -942,6 +1116,11 @@ async def clinical_brief(
     request: ClinicalBriefRequest,
 ):
 
+    db.upsert_patient(
+        request.patient_state.patient_id,
+        request.patient_state.model_dump(),
+    )
+
     result = await generate_clinical_brief(
         request.patient_state,
         request.clinical_question,
@@ -962,6 +1141,10 @@ async def generate_care_plan_endpoint(
 ):
     """Generate a care-plan draft for clinician review; do not save or approve it."""
     try:
+        db.upsert_patient(
+            request.patient_state.patient_id,
+            request.patient_state.model_dump(),
+        )
         result = await generate_care_plan(
             patient_state=request.patient_state,
             clinical_brief=request.clinical_brief,
@@ -1071,14 +1254,31 @@ def create_care_plan(
     request: CarePlanInput,
 ):
 
-    care_plan_id = str(uuid.uuid4())
+    care_plan_id = request.care_plan_id or str(uuid.uuid4())
 
     now = now_iso()
 
+    plan_data = request.model_dump()
+    if request.status == "approved":
+        # Exclude rejected actions from the approved snapshot while retaining
+        # the full review record in review_decisions/review_edits.
+        plan_data["clinical_objectives"] = [
+            item for i, item in enumerate(request.clinical_objectives)
+            if request.review_decisions.get(f"now-{i}") == "approved"
+        ]
+        plan_data["follow_up"] = [
+            item for i, item in enumerate(request.follow_up)
+            if request.review_decisions.get(f"next-{i}") == "approved"
+        ]
+        plan_data["review_state"] = "approved"
+        event_type = "care_plan_approved"
+    else:
+        event_type = "care_plan_saved"
+
     plan = {
         "care_plan_id": care_plan_id,
-        **request.model_dump(),
-        "created_at": now,
+        **plan_data,
+        "created_at": request.created_at or now,
         "updated_at": now,
     }
 
@@ -1089,12 +1289,30 @@ def create_care_plan(
     )
 
     db.save_audit(
-        "care_plan_saved",
+        event_type,
         request.patient_id,
         plan,
     )
 
     return plan
+
+
+@router.get("/care-plans")
+def get_care_plans(patient_id: str, limit: int = 50):
+    if not patient_id.strip():
+        raise HTTPException(status_code=422, detail="patient_id is required")
+    if limit < 1 or limit > 100:
+        raise HTTPException(status_code=422, detail="limit must be between 1 and 100")
+    rows = db.list_care_plans(patient_id.strip(), limit)
+    results = []
+    for row in rows:
+        plan_data = row.get("plan_json") if isinstance(row, dict) else None
+        if isinstance(plan_data, dict):
+            results.append({**plan_data, "care_plan_id": row.get("care_plan_id"),
+                            "patient_id": row.get("patient_id"), "updated_at": row.get("updated_at")})
+        else:
+            results.append(row)
+    return results
 
 
 @router.get("/patients/{patient_id}/care-plan")
@@ -1112,13 +1330,60 @@ def get_care_plan(
             detail="Care plan not found",
         )
 
+    plan_data = plan.get("plan_json") if isinstance(plan, dict) else None
+    if isinstance(plan_data, dict):
+        return {**plan_data, "updated_at": plan.get("updated_at", plan_data.get("updated_at"))}
     return plan
+
+
+@router.get("/patients/{patient_id}/approved-care-plan")
+def get_latest_approved_care_plan(patient_id: str):
+    plan = db.get_latest_approved_care_plan(patient_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Approved care plan not found")
+    plan_data = plan.get("plan_json") if isinstance(plan, dict) else None
+    if isinstance(plan_data, dict):
+        return {**plan_data, "updated_at": plan.get("updated_at", plan_data.get("updated_at"))}
+    return plan
+
+
+def _validate_reassessment_snapshot(patient_id: str, previous_state: PatientState, care_plan) -> None:
+    """Reject a reassessment based on a patient or plan snapshot that is stale."""
+    saved_patient = db.get_patient(patient_id)
+    if not saved_patient:
+        raise HTTPException(status_code=404, detail="Patient not found. Load a saved patient state first.")
+    saved_state_data = saved_patient.get("state_json") if isinstance(saved_patient, dict) else None
+    try:
+        saved_state = PatientState.model_validate(saved_state_data)
+    except Exception as exc:
+        raise HTTPException(status_code=409, detail="The saved patient state is invalid. Refresh the patient record.") from exc
+    if saved_state.model_dump() != previous_state.model_dump():
+        raise HTTPException(status_code=409, detail="The patient state changed after this reassessment was opened. Reload the patient and try again.")
+
+    saved_plan = db.get_latest_approved_care_plan(patient_id)
+    saved_plan_data = saved_plan.get("plan_json") if isinstance(saved_plan, dict) else None
+    saved_plan_id = (saved_plan_data or {}).get("care_plan_id") if isinstance(saved_plan_data, dict) else None
+    if not saved_plan_id or saved_plan_id != care_plan.care_plan_id:
+        raise HTTPException(status_code=409, detail="The approved care plan changed. Reload the patient and reassess against the current plan.")
 
 
 @router.post("/reassessment")
 def reassessment(
     request: ReassessmentRequest,
 ):
+
+    if request.previous_state.patient_id != request.current_state.patient_id:
+        raise HTTPException(status_code=422, detail="Patient IDs must match for reassessment.")
+    if request.care_plan.patient_id != request.current_state.patient_id:
+        raise HTTPException(status_code=422, detail="Care plan belongs to a different patient.")
+    if request.care_plan.status != "approved":
+        raise HTTPException(status_code=422, detail="Reassessment requires an approved care plan.")
+
+    _validate_reassessment_snapshot(
+        request.current_state.patient_id,
+        request.previous_state,
+        request.care_plan,
+    )
 
     result = reassess(
         request.previous_state,
@@ -1132,10 +1397,50 @@ def reassessment(
         else result
     )
 
-    db.save_audit(
-        "reassessment_generated",
-        request.current_state.patient_id,
-        data,
-    )
+    try:
+        db.save_audit(
+            "reassessment_generated",
+            request.current_state.patient_id,
+            data,
+        )
+    except Exception:
+        log.exception("Could not save reassessment generation audit event")
 
     return data
+
+
+@router.post("/reassessment/decision")
+def record_reassessment_decision(request: ReassessmentDecisionRequest):
+    if request.current_state.patient_id != request.patient_id:
+        raise HTTPException(status_code=422, detail="Patient ID does not match the reassessment state.")
+    if request.previous_state.patient_id != request.patient_id or request.care_plan.patient_id != request.patient_id:
+        raise HTTPException(status_code=422, detail="Patient IDs must match for reassessment review.")
+    if request.care_plan.status != "approved":
+        raise HTTPException(status_code=422, detail="Reassessment requires an approved care plan.")
+
+    _validate_reassessment_snapshot(
+        request.patient_id,
+        request.previous_state,
+        request.care_plan,
+    )
+
+    reviewed = reassess(request.previous_state, request.current_state, request.care_plan)
+    assessment_data = reviewed.model_dump() if hasattr(reviewed, "model_dump") else reviewed
+
+    if request.decision == "accepted":
+        db.upsert_patient(request.patient_id, request.current_state.model_dump())
+
+    record = {
+        "decision": request.decision,
+        "clinician_note": request.clinician_note,
+        "reassessment": assessment_data,
+        "patient_state_updated": request.decision == "accepted",
+        "recorded_at": now_iso(),
+    }
+    try:
+        db.save_audit("reassessment_decision_recorded", request.patient_id, record)
+    except Exception:
+        # The accepted state update is already committed; audit failure should
+        # be logged without telling the client the clinical update failed.
+        log.exception("Could not save reassessment decision audit event")
+    return record

@@ -44,7 +44,8 @@ CLINICAL_BRIEF_SCHEMA = {
     "additionalProperties": False,
 }
 
-# "detailed" = full professional brief; "brief" = shortest output (faster on slow hardware).
+# Keep the full clinical brief as the default; use OMNIMED_DETAIL=brief for a
+# shorter response when needed.
 DETAIL = os.getenv("OMNIMED_DETAIL", "detailed").strip().lower()
 LIMITS = (
     "summary at most 2 sentences; every list at most 4 items, each at most 25 words."
@@ -265,7 +266,12 @@ def attach_verification(
 MAX_QUERY_CONDITIONS = 3
 MAX_QUERY_SYMPTOMS = 3
 MAX_EVIDENCE_QUERIES = 6
-FALLBACK_EVIDENCE_QUERY = "clinical report review missing information uncertainty"
+GENERIC_QUESTION_TERMS = {
+    "summarize", "summary", "important", "findings", "identify", "uncertainties",
+    "uncertainty", "list", "clinician", "review", "clinical", "patient", "report",
+    "available", "information", "evidence", "please", "provide", "the", "a", "an",
+    "and", "or", "to", "what", "should", "for", "with", "about", "of", "in",
+}
 
 
 def _clean_items(values: Any) -> list[str]:
@@ -279,34 +285,62 @@ def _clean_items(values: Any) -> list[str]:
     return cleaned
 
 
-def build_evidence_queries(state: PatientState, clinical_question=None) -> list[str]:
-    """One short, focused query per condition / symptom.
+def _report_evidence_queries(notes: Any) -> list[str]:
+    """Extract short, explicit clinical topics from uploaded report text.
 
-    A single query that joins every condition and symptom lands in a generic
-    'medical' region of the embedding space and retrieves generic health-system
-    pages. Short per-problem queries retrieve topic-specific references.
+    The upload flow keeps the original report in notes. Prefer labeled
+    diagnoses/findings and abnormal result lines over sending the whole report
+    or a generic instruction to semantic search.
     """
-    print("[DEBUG] Conditions:", state.conditions, flush=True)
-    print("[DEBUG] Symptoms:", state.symptoms, flush=True)
-    print("[DEBUG] Timeline:", state.timeline, flush=True)
+    text = "\n".join(str(value) for value in (notes or []) if value)
+    text = re.sub(r"(?im)^\s*Uploaded report\s*:\s*[^\n]*", "", text)
+    if not text.strip():
+        return []
 
-    queries = (
-        _clean_items(state.conditions)[:MAX_QUERY_CONDITIONS]
-        + _clean_items(state.symptoms)[:MAX_QUERY_SYMPTOMS]
+    queries: list[str] = []
+    label = re.compile(
+        r"(?i)\b(?:primary\s+|provisional\s+)?"
+        r"(?:diagnoses?|conditions?|presenting complaint|chief complaint|"
+        r"symptoms?|impression|findings?|assessment|clinical findings?)\s*[:\-]\s*"
+        r"([^\n;]{3,220})"
     )
+    for match in label.finditer(text):
+        value = re.sub(r"\s+", " ", match.group(1)).strip(" .,:;-")
+        if value:
+            queries.append(value[:180])
+
+    # Some reports have table rows rather than labeled prose. Retain concise
+    # rows that carry an explicit abnormality marker; do not infer a diagnosis.
+    for line in re.split(r"[\r\n]+|(?<=[.!?])\s+", text):
+        compact = re.sub(r"\s+", " ", line).strip()
+        if len(compact) < 4 or len(compact) > 240:
+            continue
+        if re.search(r"\b(high|low|abnormal|critical|positive|elevated|decreased)\b", compact, re.I):
+            queries.append(compact[:180])
+        if len(queries) >= MAX_EVIDENCE_QUERIES:
+            break
+    return queries
+
+
+def build_evidence_queries(state: PatientState, clinical_question=None) -> list[str]:
+    """Build patient-specific searches from structured facts and report text."""
+    queries = _clean_items(state.conditions)[:MAX_QUERY_CONDITIONS]
+    queries.extend(_clean_items(state.symptoms)[:MAX_QUERY_SYMPTOMS])
+
+    timeline_names = _clean_items(
+        getattr(event, "name", None) for event in (state.timeline or [])
+    )
+    queries.extend(timeline_names[:2])
+    queries.extend(_report_evidence_queries(state.notes))
 
     if clinical_question:
         question = re.sub(r"\s+", " ", str(clinical_question)).strip()
-        if question:
+        terms = {
+            term.lower()
+            for term in re.findall(r"[A-Za-z][A-Za-z0-9-]{2,}", question)
+        } - GENERIC_QUESTION_TERMS
+        if terms:
             queries.append(question[:300])
-
-    # Timeline events are only a last resort when there is little else to search.
-    if len(queries) < 2:
-        timeline_names = _clean_items(
-            getattr(event, "name", None) for event in (state.timeline or [])
-        )
-        if timeline_names:
-            queries.append(" ".join(timeline_names[:4]))
 
     seen: set[str] = set()
     unique: list[str] = []
@@ -316,7 +350,9 @@ def build_evidence_queries(state: PatientState, clinical_question=None) -> list[
             seen.add(key)
             unique.append(query)
 
-    return unique[:MAX_EVIDENCE_QUERIES] or [FALLBACK_EVIDENCE_QUERY]
+    # A generic task instruction is not a medical search query. If there are no
+    # patient-specific topics, return no queries and report the evidence gap.
+    return unique[:MAX_EVIDENCE_QUERIES]
 
 
 def build_evidence_query(state: PatientState, clinical_question=None) -> str:
@@ -371,7 +407,7 @@ Rules:
 - urgency: "emergent" if the findings could indicate an immediately life-threatening condition, "urgent" if prompt review is warranted, otherwise "routine". When unsure, choose the higher level.
 - urgency_rationale: one sentence naming the specific findings behind the urgency.
 - Limits: {LIMITS}
-- Think briefly (a few short lines), then answer.
+- Think through the relevant clinical findings sufficiently to prepare the JSON. Return only the requested JSON and stay within Limits.
 
 PATIENT:
 {compact_patient(state)}
@@ -442,14 +478,14 @@ async def generate_clinical_brief(
     print("\n[OmniMed] Starting evidence-grounded clinical brief...")
 
     evidence_queries = build_evidence_queries(state, clinical_question)
-    print(f"[OmniMed] Evidence queries: {evidence_queries}")
+    print(f"[OmniMed] Patient-specific evidence searches prepared: {len(evidence_queries)}")
     triage = screen_report(report_text(state))
 
     evidence: list[dict[str, Any]] = []
 
     try:
         evidence_start = time.perf_counter()
-        evidence = search_evidence(evidence_queries, top_k=3) or []
+        evidence = search_evidence(evidence_queries, top_k=3) if evidence_queries else []
         print(f"[OmniMed] Evidence retrieval: {time.perf_counter() - evidence_start:.2f}s")
         print(f"[OmniMed] Retrieved {len(evidence)} evidence chunks.")
     except Exception as error:
@@ -547,7 +583,7 @@ async def generate_clinical_brief_stream(state: PatientState, clinical_question=
     yield stage("patient_context", "active", "Preparing patient context",
                 "Preparing available patient information.")
     evidence_queries = build_evidence_queries(state, clinical_question)
-    yield log_event(f"Evidence queries ({len(evidence_queries)}): {json.dumps(evidence_queries)[:300]}")
+    yield log_event(f"Patient-specific evidence searches prepared: {len(evidence_queries)}")
     yield stage("patient_context", "completed", "Patient context prepared",
                 "Patient context is ready for analysis.", context_start)
 
@@ -566,7 +602,11 @@ async def generate_clinical_brief_stream(state: PatientState, clinical_question=
     evidence_failed = False
     evidence_start = time.perf_counter()
     try:
-        evidence = await asyncio.to_thread(search_evidence, evidence_queries, top_k=3) or []
+        evidence = (
+            await asyncio.to_thread(search_evidence, evidence_queries, top_k=3) or []
+            if evidence_queries
+            else []
+        )
         yield log_event(
             f"Evidence retrieval: {time.perf_counter() - evidence_start:.2f}s, "
             f"{len(evidence)} chunk(s) retrieved", "ok")

@@ -1,4 +1,8 @@
+import hashlib
 from typing import Any
+
+from app.services.evidence.chunker import build_chunks
+from app.services.evidence.vector_store import index_chunks
 
 from app.services.evidence.rag import (
     index_document,
@@ -22,6 +26,44 @@ def index_evidence(
         source=source,
         metadata=metadata,
     )
+
+
+def index_text_evidence(
+    title: str,
+    source: str,
+    text: str,
+    metadata: dict[str, Any] | None = None,
+):
+    """Chunk and index text submitted from the Evidence Library UI."""
+    clean_title = title.strip()
+    clean_source = source.strip()
+    clean_text = text.strip()
+    if not clean_title or not clean_text:
+        raise ValueError("Evidence title and text are required.")
+
+    digest = hashlib.sha256(
+        f"{clean_title}\0{clean_source}\0{clean_text}".encode("utf-8")
+    ).hexdigest()[:24]
+    document_id = f"manual-evidence-{digest}"
+    doc_metadata = dict(metadata or {})
+    doc_metadata.setdefault("document_type", "clinical_reference")
+    doc_metadata.setdefault("source_type", "user_supplied")
+    chunks = build_chunks(
+        text=clean_text,
+        document_id=document_id,
+        title=clean_title,
+        source=clean_source or "User supplied",
+        metadata=doc_metadata,
+    )
+    indexed = index_chunks(chunks)
+    return {
+        "document_id": document_id,
+        "title": clean_title,
+        "source": clean_source or "User supplied",
+        "chunks": len(chunks),
+        "indexed": indexed,
+        "document_type": doc_metadata["document_type"],
+    }
 
 
 def search_evidence(

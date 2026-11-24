@@ -324,7 +324,7 @@ def retrieve_evidence(query: str | list[str], top_k: int = 5) -> list[dict[str, 
         terms = _query_terms(sub_query)
         if not terms:
             print(
-                f"[OmniMed] Skipped query with no specific clinical terms: {sub_query[:80]!r}",
+                "[OmniMed] Skipped a search query with no specific clinical terms.",
                 flush=True,
             )
             continue
@@ -340,9 +340,8 @@ def retrieve_evidence(query: str | list[str], top_k: int = 5) -> list[dict[str, 
 
             if RAG_DEBUG:
                 print(
-                    f"[OmniMed][debug] q={sub_query[:40]!r} score={item.get('score'):.3f} "
-                    f"title={item.get('title')!r} valid={valid} "
-                    f"title_hits={sorted(title_hits)} text_hits={sorted(text_hits)} "
+                    f"[OmniMed][debug] score={item.get('score'):.3f} valid={valid} "
+                    f"title_match_count={len(title_hits)} text_match_count={len(text_hits)} "
                     f"pass={passes}",
                     flush=True,
                 )

@@ -7,7 +7,7 @@ import { readResponse, type Obj } from "./useBriefStream";
 
 export const PLAN_STAGES = [
   { id: "read", label: "Read patient state and brief" },
-  { id: "evidence", label: "Search guideline evidence" },
+  { id: "evidence", label: "Search medical references" },
   { id: "reason", label: "Reason over findings" },
   { id: "draft", label: "Draft care plan" },
   { id: "structure", label: "Structure and validate" },
@@ -25,7 +25,6 @@ export type PlanTrace = {
   stages: Record<PlanStageId, StageStatus>;
   thinking: string;
   thinkingSeconds: number | null;
-  output: string;
   logs: PlanLog[];
   cancelled: boolean;
   error: string;
@@ -33,7 +32,7 @@ export type PlanTrace = {
 
 // Used only if the stream ends without a result. Adjust if your route differs.
 const FALLBACK_PATH = "/api/care-plans/generate";
-const CAP = { thinking: 20_000, output: 12_000, logs: 200 };
+const CAP = { thinking: 20_000, logs: 200 };
 const LEVELS = ["info", "ok", "warn", "error"];
 const IDS = PLAN_STAGES.map((s) => s.id) as PlanStageId[];
 
@@ -42,7 +41,7 @@ const blankStages = (): Record<PlanStageId, StageStatus> =>
 
 const init: PlanTrace = {
   runId: 0, started: false, startedAt: null, endedAt: null, stages: blankStages(),
-  thinking: "", thinkingSeconds: null, output: "", logs: [], cancelled: false, error: "",
+  thinking: "", thinkingSeconds: null, logs: [], cancelled: false, error: "",
 };
 
 type Action =
@@ -62,7 +61,7 @@ function setStage(s: PlanTrace, id: string): PlanTrace {
   const stages = blankStages();
   IDS.forEach((k, i) => { stages[k] = i < at ? "done" : i === at ? "active" : "pending"; });
   // Going backwards means the model is retrying: drop the rejected draft.
-  return { ...s, stages, output: current > at ? "" : s.output };
+  return { ...s, stages };
 }
 
 function applyEvent(s: PlanTrace, e: Obj, now: number): PlanTrace {
@@ -71,7 +70,8 @@ function applyEvent(s: PlanTrace, e: Obj, now: number): PlanTrace {
     case "thinking": return { ...s, thinking: (s.thinking + str(e.text)).slice(-CAP.thinking) };
     case "thinking_end":
       return { ...s, thinkingSeconds: typeof e.seconds === "number" ? e.seconds : s.thinkingSeconds };
-    case "token": return { ...s, output: (s.output + str(e.text)).slice(-CAP.output) };
+    // Keep token fragments off the UI; only show a plan after validation.
+    case "token": return s;
     case "log":
       return pushLog(s, {
         ts: iso(now),

@@ -94,6 +94,84 @@ function extractDemographics(text: string) {
   };
 }
 
+function extractedValue(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (!value || typeof value !== "object") return "";
+  const field = value as Record<string, unknown>;
+  if (field.needs_review === true) return "";
+  if (typeof field.value === "string" && (field.verified === true || field.source_text)) {
+    return field.value.trim();
+  }
+  return "";
+}
+
+function extractedList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.map(extractedValue).filter(Boolean))];
+}
+
+function patientContextFromReport(report: unknown, rawText: string) {
+  const source = report && typeof report === "object"
+    ? report as Record<string, unknown>
+    : {};
+  const conditions = extractedList(source.conditions);
+  const medications = extractedList(source.medications);
+  const allergies = extractedList(source.allergies);
+  const labs = Array.isArray(source.labs) ? source.labs : [];
+  const timeline = labs.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const lab = item as Record<string, unknown>;
+    const name = extractedValue(lab.test);
+    const value = extractedValue(lab.result);
+    if (!name || !value) return [];
+    return [{
+      timestamp: extractedValue(lab.timestamp) || "Unknown",
+      type: "lab",
+      name,
+      value,
+      unit: extractedValue(lab.unit) || undefined,
+      source: extractedValue(lab.flag) || undefined,
+    }];
+  });
+
+  const rawVitals = source.vitals && typeof source.vitals === "object"
+    ? source.vitals as Record<string, unknown>
+    : {};
+  const vital = (key: string, aliases: string[] = []) => {
+    const wanted = new Set([key, ...aliases].map((name) => name.toLowerCase().replace(/[^a-z0-9]/g, "")));
+    const entry = Object.entries(rawVitals).find(([name]) => wanted.has(name.toLowerCase().replace(/[^a-z0-9]/g, "")));
+    return entry ? extractedValue(entry[1]) || undefined : undefined;
+  };
+  const numericVital = (key: string, aliases: string[] = []) => {
+    const value = vital(key, aliases);
+    if (!value) return undefined;
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  };
+  const vitals = {
+    blood_pressure: vital("blood_pressure", ["blood pressure", "bp"]),
+    heart_rate: numericVital("heart_rate", ["heart rate", "pulse"]),
+    spo2: numericVital("spo2", ["oxygen saturation", "oxygen saturation spo2"]),
+    temperature: numericVital("temperature", ["body temperature"]),
+    respiratory_rate: numericVital("respiratory_rate", ["respiratory rate", "resp rate"]),
+  };
+
+  return {
+    conditions,
+    medications,
+    allergies,
+    symptoms: [] as string[],
+    timeline,
+    vitals,
+    notes: [rawText],
+    missing_information: [
+      ...(!conditions.length ? ["Confirm relevant diagnoses and conditions."] : []),
+      "Confirm current symptoms and clinical history.",
+      ...(!timeline.length ? ["Verify recent laboratory results."] : []),
+    ],
+  };
+}
+
 // Header pill styles for non-online states.
 const HEALTH_PILL: Record<
   Exclude<BackendHealth, "online">,
@@ -338,23 +416,14 @@ export default function HomePage() {
       return;
     }
 
+    const patientContext = patientContextFromReport(uploaded.structured_report, text);
     const request = {
       patient_state: {
         patient_id: id,
         age,
         sex,
-        conditions: [],
-        medications: [],
-        allergies: [],
-        symptoms: [],
-        vitals: {},
-        notes: [`Uploaded report: ${uploaded.filename}`, text],
-        missing_information: [
-          "Verify extracted measurements against the original report.",
-          "Confirm relevant symptoms and clinical history.",
-          "Confirm the formal interpretation of any pending investigations.",
-        ],
-        timeline: [],
+        ...patientContext,
+        notes: [`Uploaded report: ${uploaded.filename}`, ...patientContext.notes],
       },
       clinical_question: BRIEF_QUESTION,
     };
@@ -621,7 +690,7 @@ export default function HomePage() {
 
                   <div>
                     <strong>Upload Report</strong>
-                    <span>PDF, CSV, TXT, Markdown</span>
+                    <span>PDF, CSV, TXT, Image, Markdown</span>
                   </div>
                 </div>
 
@@ -706,7 +775,7 @@ export default function HomePage() {
                       Drag and drop a file here, or click to browse
                     </strong>
 
-                    <span>PDF, CSV, TXT, or Markdown (max 10 MB)</span>
+                    <span>PDF, CSV, TXT, Image or Markdown (max 10 MB)</span>
 
                     <button
                       type="button"

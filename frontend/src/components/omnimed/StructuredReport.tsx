@@ -11,6 +11,8 @@ type Props = {
   text: string;
   characters: number;
   onRemove: () => void;
+  status?: "ready" | "failed" | "extracting" | "structuring";
+  error?: string;
   // Kept optional so existing callers passing this prop do not break.
   structuredReport?: unknown;
   fileUrl?: string;

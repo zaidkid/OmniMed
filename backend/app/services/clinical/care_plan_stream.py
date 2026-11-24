@@ -17,6 +17,7 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from app.core import db
 from app.services.ai.llm import BRIEF_NUM_CTX, ollama_generate_stream
 from app.services.clinical.care_plan import (
     CARE_PLAN_SCHEMA,
@@ -62,17 +63,20 @@ async def _events(req: CarePlanRequest) -> AsyncIterator[str]:
 
         # 2. Evidence: guidelines from the Qdrant store
         yield ev("stage", stage="evidence")
+        evidence_started = time.perf_counter()
         evidence = await retrieve_evidence(query)
+        evidence_seconds = time.perf_counter() - evidence_started
         yield ev(
             "log",
             level="ok" if evidence else "warn",
             message=(
-                f"Retrieved {len(evidence)} evidence passages"
+                f"Retrieved {len(evidence)} evidence passages in {evidence_seconds:.2f}s"
                 if evidence
-                else "No relevant evidence retrieved; the plan will not cite any"
+                else f"No relevant evidence retrieved in {evidence_seconds:.2f}s; the plan will not cite any"
             ),
         )
         ctx = build_context(req.patient_state, req.clinical_brief, req.clinician_note, evidence)
+        yield ev("log", level="info", message=f"Care-plan prompt size: {len(ctx.prompt):,} characters")
 
         # 3-4. Reason + draft (one retry if the answer is invalid or has empty core sections)
         best: dict[str, Any] | None = None
@@ -85,6 +89,7 @@ async def _events(req: CarePlanRequest) -> AsyncIterator[str]:
             if attempt == 0:
                 yield ev("stage", stage="reason")
             text, drafting = "", False
+            generation_started = time.perf_counter()
 
             async for item in ollama_generate_stream(
                 ctx.prompt + note,
@@ -97,7 +102,9 @@ async def _events(req: CarePlanRequest) -> AsyncIterator[str]:
                 answer_num_predict=PLAN_ANSWER_NUM_PREDICT,
             ):
                 kind = item["type"]
-                if kind == "thinking":
+                if kind == "first_token":
+                    yield ev("log", level="info", message=f"First model output after {item['seconds']:.1f}s")
+                elif kind == "thinking":
                     yield ev("thinking", text=item["text"])
                 elif kind == "thinking_end":
                     yield ev("thinking_end", seconds=item.get("seconds"), limited=bool(item.get("limited")))
@@ -110,13 +117,29 @@ async def _events(req: CarePlanRequest) -> AsyncIterator[str]:
                         drafting = True
                         yield ev("stage", stage="draft")
                     text += item["text"]
-                    yield ev("token", text=item["text"])
                 elif kind == "done":
                     text = item["text"]
+                    eval_count = item.get("eval_count")
+                    eval_duration = item.get("eval_duration")
+                    speed = eval_count / (eval_duration / 1e9) if eval_count and eval_duration else None
+                    speed_text = f", {speed:.1f} tokens/s" if speed else ""
+                    yield ev(
+                        "log",
+                        level="info",
+                        message=(
+                            f"Model generation: {time.perf_counter() - generation_started:.1f}s, "
+                            f"{eval_count or 0} answer tokens{speed_text}; "
+                            f"prompt processing {(item.get('prompt_eval_duration') or 0) / 1e9:.1f}s"
+                        ),
+                    )
                     meta = {
                         "model": item.get("model"),
-                        "eval_count": item.get("eval_count"),
+                        "eval_count": eval_count,
                         "thinking_seconds": item.get("thinking_seconds"),
+                        "generation_seconds": round(time.perf_counter() - generation_started, 2),
+                        "tokens_per_second": round(speed, 1) if speed else None,
+                        "prompt_characters": len(ctx.prompt + note),
+                        "evidence_seconds": round(evidence_seconds, 2),
                     }
 
             # 5. Structure: parse + validate
@@ -143,6 +166,7 @@ async def _events(req: CarePlanRequest) -> AsyncIterator[str]:
 
 @router.post("/api/care-plans/stream")
 async def stream_care_plan(req: CarePlanRequest) -> StreamingResponse:
+    db.upsert_patient(req.patient_state.patient_id, req.patient_state.model_dump())
     return StreamingResponse(
         _events(req),
         media_type="application/x-ndjson",

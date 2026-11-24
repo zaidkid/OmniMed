@@ -58,12 +58,6 @@ export default function PlanProcess({ trace, running, onCancel }: {
           <pre>{trace.thinking}</pre>
         </details>
       )}
-      {trace.output && (
-        <details className="cp-det" open={running}>
-          <summary>Live draft output</summary>
-          <pre>{trace.output}</pre>
-        </details>
-      )}
       {trace.logs.length > 0 && (
         <details className="cp-det">
           <summary>Backend log ({trace.logs.length})</summary>

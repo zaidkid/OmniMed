@@ -1,5 +1,5 @@
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Literal, Optional
+from pydantic import BaseModel, Field, model_validator
 
 class LabResult(BaseModel):
     name: str
@@ -48,15 +48,47 @@ class PatientState(BaseModel):
     notes: List[str]
 
 class CarePlanInput(BaseModel):
+    care_plan_id: Optional[str] = None
     patient_id: str
     pathway: str
+    clinical_objectives: List[str] = Field(default_factory=list)
     monitoring: List[str] = Field(default_factory=list)
     pending_information: List[str] = Field(default_factory=list)
     follow_up: List[str] = Field(default_factory=list)
+    safety_warnings: List[str] = Field(default_factory=list)
+    uncertainty: List[str] = Field(default_factory=list)
+    evidence_references: List[Any] = Field(default_factory=list)
+    source_documents: List[str] = Field(default_factory=list)
+    evidence_grounded: bool = False
+    evidence_count: int = Field(default=0, ge=0)
+    missing_sections: List[str] = Field(default_factory=list)
+    generation_meta: Dict[str, Any] = Field(default_factory=dict)
+    source_brief_generated_at: Optional[str] = None
     clinician_note: Optional[str] = None
+    review_decisions: Dict[str, Literal["approved", "rejected"]] = Field(default_factory=dict)
+    review_edits: Dict[str, str] = Field(default_factory=dict)
+    review_state: Literal["awaiting_clinician_review", "reviewed", "approved"] = "awaiting_clinician_review"
+    approved_at: Optional[str] = None
+    created_at: Optional[str] = None
 
     # Saving a generated draft must never imply clinician approval.
-    status: str = "draft"
+    status: Literal["draft", "approved"] = "draft"
+
+    @model_validator(mode="after")
+    def require_complete_review_for_approval(self):
+        if self.status != "approved":
+            return self
+        action_ids = [
+            *(f"now-{i}" for i in range(len(self.clinical_objectives))),
+            *(f"next-{i}" for i in range(len(self.follow_up))),
+        ]
+        if not action_ids or any(action_id not in self.review_decisions for action_id in action_ids):
+            raise ValueError("Review every objective and follow-up item before approving the plan.")
+        if not any(self.review_decisions[action_id] == "approved" for action_id in action_ids):
+            raise ValueError("Approve at least one objective or follow-up item.")
+        if not self.approved_at:
+            raise ValueError("An approval timestamp is required.")
+        return self
 
 
 class CarePlan(BaseModel):
@@ -105,6 +137,14 @@ class ReassessmentRequest(BaseModel):
     previous_state: PatientState
     current_state: PatientState
     care_plan: CarePlan
+
+class ReassessmentDecisionRequest(BaseModel):
+    patient_id: str
+    decision: Literal["accepted", "edit", "dismissed"]
+    previous_state: PatientState
+    current_state: PatientState
+    care_plan: CarePlan
+    clinician_note: Optional[str] = None
 
 class ReassessmentResponse(BaseModel):
     patient_id: str

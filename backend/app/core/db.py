@@ -177,7 +177,11 @@ def save_care_plan(
                     plan_json,
                     updated_at
                 )
-                VALUES (%s, %s, %s, %s);
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (care_plan_id) DO UPDATE SET
+                    patient_id = EXCLUDED.patient_id,
+                    plan_json = EXCLUDED.plan_json,
+                    updated_at = EXCLUDED.updated_at;
                 """,
                 (
                     care_plan_id,
@@ -208,6 +212,40 @@ def get_latest_care_plan(patient_id: str):
                 (patient_id,)
             )
 
+            return cur.fetchone()
+
+
+def list_care_plans(patient_id: str, limit: int = 50):
+    """Return a patient's saved care plans, newest first."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT care_plan_id, patient_id, plan_json, updated_at
+                FROM care_plans
+                WHERE patient_id = %s
+                ORDER BY updated_at DESC
+                LIMIT %s;
+                """,
+                (patient_id, limit),
+            )
+            return cur.fetchall()
+
+
+def get_latest_approved_care_plan(patient_id: str):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT care_plan_id, patient_id, plan_json, updated_at
+                FROM care_plans
+                WHERE patient_id = %s
+                  AND plan_json->>'status' = 'approved'
+                ORDER BY updated_at DESC
+                LIMIT 1;
+                """,
+                (patient_id,),
+            )
             return cur.fetchone()
 
 
@@ -278,6 +316,22 @@ def list_documents(patient_id: str | None = None):
                 )
 
             return cur.fetchall()
+
+
+def get_patient_document(document_id: str, patient_id: str):
+    """Fetch one stored document only when it belongs to the supplied patient."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT document_id, patient_id, filename, mime_type, path
+                FROM documents
+                WHERE document_id = %s AND patient_id = %s
+                LIMIT 1;
+                """,
+                (document_id, patient_id),
+            )
+            return cur.fetchone()
 
 
 # ============================================================

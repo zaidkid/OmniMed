@@ -251,9 +251,27 @@ def _evidence_label(item: Any) -> str:
     return pick(lambda k: getattr(item, k, None))
 
 
-def _evidence_references(evidence: list[Any]) -> list[str]:
-    labels = [_evidence_label(item) for item in evidence]
-    return _dedupe([label for label in labels if label])[:8]
+def _evidence_references(evidence: list[Any]) -> list[dict[str, Any]]:
+    """Persist traceable source details rather than title-only citations."""
+    references: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in evidence:
+        if not isinstance(item, dict):
+            continue
+        label = _evidence_label(item)
+        if not label or label.lower() in seen:
+            continue
+        seen.add(label.lower())
+        metadata = item.get("metadata") if isinstance(item.get("metadata"), dict) else {}
+        references.append({
+            "title": str(item.get("title") or label),
+            "source": str(item.get("source") or "Source unavailable"),
+            "url": item.get("url") or metadata.get("url"),
+            "excerpt": str(item.get("excerpt") or item.get("text") or "")[:1400],
+            "score": item.get("score"),
+            "document_id": item.get("document_id"),
+        })
+    return references[:8]
 
 
 def _score(item: Any) -> float | None:
@@ -462,7 +480,7 @@ def build_evidence_query(
 
 
 async def retrieve_evidence(queries: str | list[str]) -> list[Any]:
-    """Guideline passages from the Qdrant evidence store, merged across queries.
+    """Medical-reference passages from Qdrant, merged across patient queries.
 
     Never raises. Queries run one after another (local Qdrant is single-client).
     """
@@ -477,7 +495,7 @@ async def retrieve_evidence(queries: str | list[str]) -> list[Any]:
                 await asyncio.to_thread(search_evidence, query, top_k=EVIDENCE_PER_QUERY) or []
             )
         except Exception:
-            logger.exception("Care-plan evidence retrieval failed for %r", query)
+            logger.exception("Care-plan evidence retrieval failed for one patient-specific query")
             continue
         for item in items:
             key = _key(_evidence_label(item)) or _key(str(item)[:200])
@@ -490,15 +508,32 @@ async def retrieve_evidence(queries: str | list[str]) -> list[Any]:
     found.sort(key=lambda i: _score(i) or 0.0, reverse=True)
     found = found[:MAX_EVIDENCE]
 
-    logger.info("[OmniMed] Care-plan evidence: queries=%r -> %d passage(s)", queries, len(found))
+    logger.info(
+        "[OmniMed] Care-plan evidence: %d patient-specific query(ies) -> %d passage(s)",
+        len(queries),
+        len(found),
+    )
     return found
 
 
 def _compact_patient(state: PatientState) -> str:
-    """Serialize recorded patient information without inventing missing values."""
-    return json.dumps(
-        state.model_dump(exclude_none=True), ensure_ascii=False, default=str
-    )[:6000]
+    """Serialize core patient facts without repeating an entire source report."""
+    data = state.model_dump(exclude_none=True)
+    notes = data.get("notes") or []
+    compact_notes: list[str] = []
+    remaining = 1800
+    for note in notes:
+        if remaining <= 0:
+            break
+        text = re.sub(r"\s+", " ", str(note)).strip()
+        if text.lower().startswith("uploaded report:"):
+            continue
+        excerpt = text[:remaining]
+        if excerpt:
+            compact_notes.append(excerpt)
+            remaining -= len(excerpt)
+    data["notes"] = compact_notes
+    return json.dumps(data, ensure_ascii=False, default=str)[:4800]
 
 
 def _recorded_findings(brief: dict[str, Any]) -> str:
@@ -522,7 +557,7 @@ def _brief_for_prompt(brief: dict[str, Any]) -> str:
             slim["signals"] = signals
         if slim:
             out["urgency"] = slim
-    return json.dumps(out, ensure_ascii=False, default=str)[:3500]
+    return json.dumps(out, ensure_ascii=False, default=str)[:3000]
 
 
 def build_context(
@@ -539,7 +574,7 @@ def build_context(
 
     if not evidence:
         evidence_text = (
-            "No relevant guideline evidence was retrieved. Base the plan ONLY on "
+            "No relevant medical-reference evidence was retrieved. Base the plan ONLY on "
             "the recorded patient findings and the clinical brief. Do not cite, "
             "name, or imply any external guideline or source."
         )
@@ -640,6 +675,10 @@ def finalize_care_plan(
     """Clean the model plan and attach everything that is built in code."""
     plan = _polish(plan, ctx.patient_state, ctx.clinical_brief)
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    brief_meta = ctx.clinical_brief.get("generation_meta")
+    source_brief_generated_at = (
+        brief_meta.get("generated_at") if isinstance(brief_meta, dict) else None
+    )
 
     # Draft only. This function does not save or approve anything.
     return {
@@ -656,6 +695,7 @@ def finalize_care_plan(
         "status": "draft",
         "review_state": "awaiting_clinician_review",
         "generation_meta": meta or {},
+        "source_brief_generated_at": source_brief_generated_at,
         "created_at": now,
         "updated_at": now,
         "safety_note": (

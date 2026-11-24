@@ -26,6 +26,7 @@ import { API } from "./Ui";
 const nav = [
   ["Clinical Brief", "/?tab=Clinical%20Brief", Activity],
   ["Care Plan", "/?tab=Care%20Plan", ClipboardList],
+  ["Saved Plans", "/care-plans", ClipboardList],
   ["Watch", "/?tab=Watch", Eye],
   ["Reassessment", "/reassessment", RefreshCw],
   ["Documents", "/documents", FileText],

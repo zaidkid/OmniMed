@@ -1,8 +1,8 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Check, ChevronDown, FileSpreadsheet, FileText, Loader2,
-  Plus, RefreshCw, Search, UploadCloud,
+  ChevronDown, FileSpreadsheet, FileText, Loader2,
+  RefreshCw, Search, UploadCloud,
 } from "lucide-react";
 import Shell from "../../components/Shell";
 import { API, api, useToast } from "../../components/Ui";
@@ -19,10 +19,16 @@ type Uploaded = {
   filename: string;
   characters_extracted: number;
   text_preview: string;
+  extracted_text?: string;
+  vision_available?: boolean;
+  vision_model?: string | null;
 };
 
-const PATIENT = "OMNI-DEMO-001";
-const ALLOWED = [".pdf", ".txt", ".md", ".csv"];
+type DocumentSummary = { summary: string; key_findings: string[]; uncertainties: string[]; review_note: string; image_interpreted: boolean };
+type VisionSummary = { summary: string; observed_features: string[]; image_quality: string; possible_modality: string; uncertainties: string[]; clinician_review_questions: string[]; model: string; diagnostic: false; clinician_review_required: true };
+
+const ALLOWED = [".pdf", ".txt", ".md", ".csv", ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp"];
+const IMAGE_TYPES = new Set([".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp"]);
 const PREVIEW_CHARS = 1500;
 
 const ext = (name: string) => {
@@ -98,36 +104,55 @@ const CSS = `
 `;
 
 export default function Documents() {
+  const [patientId, setPatientId] = useState("");
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [last, setLast] = useState<Uploaded | null>(null);
+  const [summary, setSummary] = useState<DocumentSummary | null>(null);
+  const [visionSummary, setVisionSummary] = useState<VisionSummary | null>(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [analyzingImage, setAnalyzingImage] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [drag, setDrag] = useState(false);
   const [query, setQuery] = useState("");
-  const [indexing, setIndexing] = useState<Record<string, "busy" | "done">>({});
   const [toast, say] = useToast();
   const input = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get("patient_id");
+    if (fromUrl) setPatientId(fromUrl);
+  }, []);
+
   const refresh = useCallback(async () => {
+    if (!patientId.trim()) {
+      setDocs([]);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     setRefreshing(true);
     try {
-      setDocs(await api<Doc[]>(`/api/documents?patient_id=${PATIENT}`));
+      setDocs(await api<Doc[]>(`/api/documents?patient_id=${encodeURIComponent(patientId.trim())}`));
       setErr("");
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Could not reach backend");
     }
     setLoading(false);
     setRefreshing(false);
-  }, []);
+  }, [patientId]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
   const upload = async (file: File) => {
+    if (!patientId.trim()) {
+      setErr("Enter a patient ID before uploading a document.");
+      return;
+    }
     if (!ALLOWED.includes(ext(file.name))) {
       setErr(`Unsupported file type. Allowed: ${ALLOWED.join(", ")}`);
       return;
@@ -137,10 +162,12 @@ export default function Documents() {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("patient_id", PATIENT);
+      fd.append("patient_id", patientId.trim());
       const r = await fetch(`${API}/api/documents/upload`, { method: "POST", body: fd });
       if (!r.ok) throw new Error(`${r.status}: ${(await r.text()).slice(0, 200)}`);
       setLast((await r.json()) as Uploaded);
+      setSummary(null);
+      setVisionSummary(null);
       say(`Uploaded ${file.name}`);
       await refresh();
     } catch (e) {
@@ -149,29 +176,34 @@ export default function Documents() {
     setBusy(false);
   };
 
-  const addToEvidence = async (d: Doc) => {
-    if (!d.extracted_text) return say("No extracted text to index.");
-    setIndexing((s) => ({ ...s, [d.document_id]: "busy" }));
+  const summarizeLast = async () => {
+    if (!last?.extracted_text?.trim()) return;
+    setSummarizing(true);
+    setErr("");
     try {
-      await api("/api/evidence/index", {
+      setSummary(await api<DocumentSummary>("/api/documents/summarize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: d.filename,
-          source: "Uploaded document",
-          text: d.extracted_text,
-          metadata: { document_id: d.document_id },
-        }),
-      });
-      setIndexing((s) => ({ ...s, [d.document_id]: "done" }));
-      say("Added to the evidence library.");
+        body: JSON.stringify({ filename: last.filename, extracted_text: last.extracted_text }),
+      }));
     } catch (e) {
-      setIndexing((s) => {
-        const { [d.document_id]: _omit, ...rest } = s;
-        return rest;
-      });
-      say(e instanceof Error ? `Failed: ${e.message}` : "Failed to index");
-    }
+      setErr(e instanceof Error ? e.message : "Could not summarize extracted text");
+    } finally { setSummarizing(false); }
+  };
+
+  const analyzeImage = async () => {
+    if (!last?.document_id || !patientId.trim()) return;
+    setAnalyzingImage(true);
+    setErr("");
+    try {
+      setVisionSummary(await api<VisionSummary>("/api/documents/vision-summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ document_id: last.document_id, patient_id: patientId.trim() }),
+      }));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Could not analyze image");
+    } finally { setAnalyzingImage(false); }
   };
 
   const visible = useMemo(() => {
@@ -185,7 +217,12 @@ export default function Documents() {
       <div className="dp-wrap">
         <div className="dp-head">
           <h1>Documents</h1>
-          <p>Upload PDF, TXT, MD or CSV files. Text is extracted by the backend.</p>
+          <p>Extracted text stays in this patient&apos;s record; shared references belong in Evidence Library.</p>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, fontSize: 13 }}>
+            Patient ID
+            <input value={patientId} onChange={(event) => setPatientId(event.target.value)} placeholder="Enter patient ID" aria-label="Patient ID" style={{ maxWidth: 280, padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 9 }} />
+            <button type="button" className="dp-btn ghost" disabled={!patientId.trim() || refreshing} onClick={() => void refresh()}><RefreshCw size={14} />Load</button>
+          </label>
         </div>
 
         <div className="dp-card">
@@ -204,7 +241,7 @@ export default function Documents() {
               {busy ? <Loader2 size={24} className="dp-spin" /> : <UploadCloud size={24} />}
             </div>
             <strong>{busy ? "Uploading and extracting text..." : "Drag and drop a file here"}</strong>
-            <small>PDF, TXT, MD or CSV</small>
+            <small>PDF, TXT, MD, CSV, PNG, JPG, TIFF, BMP or WEBP · up to 25 MB</small>
             <button
               type="button"
               className="dp-btn"
@@ -234,6 +271,32 @@ export default function Documents() {
                 {last.filename} <span>· {last.characters_extracted.toLocaleString()} characters extracted</span>
               </div>
               <p>{last.text_preview.slice(0, 600)}</p>
+              {last.extracted_text?.trim() ? (
+                <button type="button" className="dp-btn ghost" disabled={summarizing} onClick={() => void summarizeLast()}>
+                  {summarizing ? "Summarizing extracted text…" : "Summarize extracted text"}
+                </button>
+              ) : <p>This file produced no readable text. Use the configured vision model below to analyze image content.</p>}
+              {summary && <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #bbf7d0" }}>
+                <strong>Summary of extracted text</strong><p>{summary.summary}</p>
+                {!!summary.key_findings?.length && <><strong>Key findings</strong><ul>{summary.key_findings.map((item, i) => <li key={i}>{item}</li>)}</ul></>}
+                {!!summary.uncertainties?.length && <><strong>Uncertainties</strong><ul>{summary.uncertainties.map((item, i) => <li key={i}>{item}</li>)}</ul></>}
+                <small>{summary.review_note} This summarizes OCR/text only; it does not interpret the medical image.</small>
+              </div>}
+              {IMAGE_TYPES.has(ext(last.filename)) && <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #dbeafe" }}>
+                {last.vision_available ? <button type="button" className="dp-btn" disabled={analyzingImage} onClick={() => void analyzeImage()}>
+                  {analyzingImage ? "Analyzing image…" : `Analyze image with ${last.vision_model || "vision model"}`}
+                </button> : <p>Image analysis is not configured. Set <code>OLLAMA_VISION_MODEL</code> to an installed Ollama vision model, then restart the backend.</p>}
+                {visionSummary && <div style={{ marginTop: 12, padding: 14, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10 }}>
+                  <strong>AI image observations · not a diagnosis</strong>
+                  <p>{visionSummary.summary}</p>
+                  <p><strong>Possible modality:</strong> {visionSummary.possible_modality}</p>
+                  <p><strong>Image quality:</strong> {visionSummary.image_quality}</p>
+                  {!!visionSummary.observed_features?.length && <><strong>Observed features</strong><ul>{visionSummary.observed_features.map((item, i) => <li key={i}>{item}</li>)}</ul></>}
+                  {!!visionSummary.uncertainties?.length && <><strong>Uncertainties</strong><ul>{visionSummary.uncertainties.map((item, i) => <li key={i}>{item}</li>)}</ul></>}
+                  {!!visionSummary.clinician_review_questions?.length && <><strong>Clinician review</strong><ul>{visionSummary.clinician_review_questions.map((item, i) => <li key={i}>{item}</li>)}</ul></>}
+                  <small>Model: {visionSummary.model}. AI output can be wrong; a qualified clinician or radiologist must review the original image.</small>
+                </div>}
+              </div>}
             </div>
           )}
         </div>
@@ -269,7 +332,9 @@ export default function Documents() {
           )}
 
           {!loading && docs.length === 0 && !err && (
-            <div className="dp-card dp-empty">No documents yet. Upload one above to get started.</div>
+            <div className="dp-card dp-empty">
+              {patientId.trim() ? "No documents yet. Upload one above to get started." : "Enter a patient ID to load that patient’s documents."}
+            </div>
           )}
 
           {!loading && docs.length > 0 && visible.length === 0 && (
@@ -281,7 +346,6 @@ export default function Documents() {
               const isOpen = open === d.document_id;
               const kind = ext(d.filename).replace(".", "");
               const text = d.extracted_text ?? "";
-              const state = indexing[d.document_id];
               return (
                 <div className="dp-item" key={d.document_id}>
                   <div className="dp-row">
@@ -302,21 +366,6 @@ export default function Documents() {
                       </span>
                     </button>
                     <span className="dp-chars">{text.length.toLocaleString()} chars</span>
-                    <button
-                      type="button"
-                      className={`dp-btn ghost ${state === "done" ? "done" : ""}`}
-                      disabled={state === "busy" || state === "done"}
-                      onClick={() => addToEvidence(d)}
-                    >
-                      {state === "busy" ? (
-                        <Loader2 size={14} className="dp-spin" />
-                      ) : state === "done" ? (
-                        <Check size={14} />
-                      ) : (
-                        <Plus size={14} />
-                      )}
-                      {state === "done" ? "Added" : "Add to evidence"}
-                    </button>
                     <ChevronDown size={16} className={`dp-chev ${isOpen ? "open" : ""}`} />
                   </div>
                   {isOpen && (

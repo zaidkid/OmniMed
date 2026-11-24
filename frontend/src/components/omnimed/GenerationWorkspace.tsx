@@ -80,7 +80,6 @@ export default function GenerationWorkspace({ gen, onCancel }: { gen: GenState; 
   const open = manual ?? !thinkingDone; // auto-open while thinking, auto-collapse when done
   const finished = !gen.running && gen.started;
   const lastLog = gen.logs[gen.logs.length - 1];
-  const validation = gen.stages.validation?.status;
 
   const status = gen.running ? { cls: "run", text: `Running · ${elapsed.toFixed(1)} s` }
     : gen.cancelled ? { cls: "warn", text: "Cancelled" }
@@ -149,7 +148,7 @@ export default function GenerationWorkspace({ gen, onCancel }: { gen: GenState; 
             </div>
           </div>
         </div>
-      ) : gen.output.length > 0 || finished ? (
+      ) : finished ? (
         <p className="og-think-none"><BrainCircuit size={14} /> No separate reasoning was shown for this run.</p>
       ) : (
         <p className="og-think-none og-shimmer"><BrainCircuit size={14} /> Waiting for model output…</p>
@@ -158,17 +157,8 @@ export default function GenerationWorkspace({ gen, onCancel }: { gen: GenState; 
       {gen.error && <div className="og-error" role="alert"><AlertCircle size={15} /> {gen.error}</div>}
 
       <details className="og-exec">
-        <summary>Execution details <span>{gen.logs.length} events · {gen.output.length.toLocaleString()} characters drafted</span></summary>
+        <summary>Execution details <span>{gen.logs.length} backend events</span></summary>
         <div className="og-panes">
-          <div className="og-pane">
-            <header>
-              <Sparkles size={14} /> Draft output
-              <span>{validation === "completed" ? "validation finished" : "intermediate, not validated"}</span>
-            </header>
-            <Pane content={gen.output} follow={gen.running} className="og-term">
-              {gen.output || "Waiting for response tokens…"}
-            </Pane>
-          </div>
           <div className="og-pane">
             <header><Activity size={14} /> Backend log <span>FastAPI events</span></header>
             <Pane content={gen.logs.length} follow={gen.running} className="og-term">

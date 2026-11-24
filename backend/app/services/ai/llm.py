@@ -6,7 +6,7 @@ import time
 from typing import Any, AsyncIterator
 
 import httpx
-from app.core.config import OLLAMA_BASE_URL, OLLAMA_MODEL
+from app.core.config import OLLAMA_BASE_URL, OLLAMA_MODEL, OLLAMA_VISION_MODEL
 
 
 def _read_timeout() -> float | None:
@@ -37,9 +37,10 @@ BRIEF_NUM_CTX = int(_env_number("OMNIMED_NUM_CTX", 4096))
 BRIEF_NUM_PREDICT = int(_env_number("OMNIMED_NUM_PREDICT", 1500))
 THINK_BUDGET_SECONDS = _env_number("OMNIMED_THINK_BUDGET_SECONDS", 15)
 THINK_BUDGET_CHARS = int(_env_number("OMNIMED_THINK_BUDGET_CHARS", 1500))
-# Token cap for the answer once thinking was cut off (the detailed brief JSON is ~350-600 tokens).
+# Restore enough answer budget for the complete structured clinical brief.
 BRIEF_ANSWER_NUM_PREDICT = int(_env_number("OMNIMED_ANSWER_NUM_PREDICT", 900))
-# OMNIMED_THINK=off skips reasoning completely (fastest on CPU-only machines).
+# Keep the model's visible reasoning enabled by default; its generation is
+# bounded above so the brief can stay responsive on CPU-only machines.
 THINK_ENABLED = os.getenv("OMNIMED_THINK", "on").strip().lower() not in {"0", "off", "false", "no"}
 
 
@@ -68,6 +69,14 @@ def _options(temperature: float, num_predict: int, num_ctx: int | None) -> dict[
     options: dict[str, Any] = {"temperature": temperature, "num_predict": num_predict}
     if num_ctx:
         options["num_ctx"] = int(num_ctx)
+    # Leave Ollama's hardware-aware default in place unless a machine-specific
+    # CPU thread count has been benchmarked and explicitly configured.
+    try:
+        cpu_threads = int(os.getenv("OMNIMED_OLLAMA_NUM_THREADS", "0").strip() or 0)
+    except ValueError:
+        cpu_threads = 0
+    if cpu_threads > 0:
+        options["num_thread"] = cpu_threads
     return options
 
 
@@ -123,6 +132,47 @@ async def ollama_generate(
         keep_alive=keep_alive, temperature=temperature, think=False,
     )
     return result["text"]
+
+
+async def ollama_generate_from_image(
+    prompt: str,
+    image_bytes: bytes,
+    output_schema: dict,
+    *,
+    model: str | None = None,
+    num_predict: int = 420,
+) -> dict[str, Any]:
+    """Run an image prompt only on the separately configured vision model."""
+    used_model = model or OLLAMA_VISION_MODEL
+    if not used_model:
+        raise ValueError("OLLAMA_VISION_MODEL is not configured")
+    import base64
+
+    payload = {
+        "model": used_model,
+        "prompt": prompt,
+        "images": [base64.b64encode(image_bytes).decode("ascii")],
+        "stream": False,
+        "think": False,
+        "keep_alive": "30m",
+        "format": output_schema,
+        "options": _options(0.1, num_predict, 4096),
+    }
+    timeout = httpx.Timeout(_read_timeout() or 180.0, connect=10.0)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        response = await client.post(f"{OLLAMA_BASE_URL.rstrip('/')}/api/generate", json=payload)
+        response.raise_for_status()
+        data = response.json()
+    text = data.get("response", "")
+    if not isinstance(text, str) or not text.strip():
+        raise OllamaEmptyResponseError("Ollama vision model returned an empty response.")
+    return {
+        "text": text.strip(),
+        "model": used_model,
+        "prompt_eval_count": data.get("prompt_eval_count"),
+        "eval_count": data.get("eval_count"),
+        "total_duration": data.get("total_duration"),
+    }
 
 
 async def _stream_once(
@@ -325,6 +375,8 @@ async def ollama_generate_stream(
             if not use_think:
                 raise RuntimeError(str(exc)) from exc
             use_think = False
+            predict = min(predict, answer_num_predict)
+            options = _options(temperature, predict, num_ctx)
             yield {"type": "thinking_unsupported", "model": used_model, "detail": str(exc)[:200]}
 
 
@@ -336,7 +388,10 @@ async def ollama_model_status(model: str | None = None) -> dict[str, Any]:
     """
     used = model or OLLAMA_MODEL
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(3.0)) as client:
+        # This status probe is informational and runs before every streamed
+        # brief. Keep an unreachable Ollama status endpoint from adding seconds
+        # to the clinical generation path.
+        async with httpx.AsyncClient(timeout=httpx.Timeout(1.0)) as client:
             response = await client.get(f"{OLLAMA_BASE_URL.rstrip('/')}/api/ps")
             response.raise_for_status()
             for item in response.json().get("models", []):

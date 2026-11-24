@@ -241,7 +241,7 @@ export default function Evidence() {
     setAdding(true);
 
     try {
-      await api("/api/evidence/index", {
+      const indexed = await api<{ indexed?: number }>("/api/evidence/index", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -253,7 +253,7 @@ export default function Evidence() {
         }),
       });
 
-      say("Evidence indexed successfully.");
+      say(`Indexed ${indexed.indexed ?? 0} evidence chunk${indexed.indexed === 1 ? "" : "s"} into Qdrant.`);
 
       setForm({
         title: "",
@@ -315,8 +315,8 @@ export default function Evidence() {
                 </div>
 
                 <div className="omni-panel-heading-text">
-                  <h2>Indexed evidence</h2>
-                  <p>Items in the knowledge library</p>
+                  <h2>Indexed passages</h2>
+                  <p>Searchable vectors in Qdrant</p>
                 </div>
               </div>
 
@@ -704,7 +704,7 @@ export default function Evidence() {
               <p>
                 Verify evidence sources and clinical claims before using
                 them in care decisions. OmniMed supports clinical workflows
-                and does not replace professional medical judgment.
+                and does not replace professional medical judgment. This library is shared across patient searches; do not add patient-specific reports here.
               </p>
             </div>
           </div>

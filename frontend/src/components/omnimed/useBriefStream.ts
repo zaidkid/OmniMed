@@ -34,7 +34,6 @@ export type GenState = {
   thinkingSeconds: number | null;
   thinkingLimited: boolean;
   triage: Obj | null;
-  output: string;
   logs: LogLine[];
   cancelled: boolean;
   error: string;
@@ -47,13 +46,13 @@ type Action =
   | { type: "log"; level: LogLine["level"]; text: string; now: number }
   | { type: "end"; now: number; cancelled?: boolean; error?: string };
 
-const CAP = { thinking: 60_000, output: 16_000, logs: 300 };
+const CAP = { thinking: 60_000, logs: 300 };
 const LEVELS = ["info", "ok", "warn", "error"];
 
 const init: GenState = {
   runId: 0, started: false, running: false, startedAt: null, endedAt: null,
   stages: {}, attempt: 1, thinking: "", thinkStart: null, thinkingSeconds: null,
-  thinkingLimited: false, triage: null, output: "", logs: [], cancelled: false, error: "",
+  thinkingLimited: false, triage: null, logs: [], cancelled: false, error: "",
 };
 
 const iso = (ms: number) => new Date(ms).toISOString();
@@ -78,7 +77,7 @@ function applyEvent(s: GenState, e: Obj, now: number): GenState {
       const attempt = Number(e.attempt) || 1;
       if (attempt === 1) return { ...s, attempt };
       return {
-        ...s, attempt, output: "", thinkStart: null, thinkingSeconds: null,
+        ...s, attempt, thinkStart: null, thinkingSeconds: null,
         thinking: s.thinking ? `${s.thinking}\n\n— Attempt ${attempt} —\n\n` : "",
       };
     }
@@ -96,10 +95,9 @@ function applyEvent(s: GenState, e: Obj, now: number): GenState {
           : s.thinkStart ? (now - s.thinkStart) / 1000 : null,
       };
     case "live_output":
-      return {
-        ...s, output: (s.output + text(e)).slice(-CAP.output),
-        thinkingSeconds: s.thinkingSeconds ?? (s.thinkStart ? (now - s.thinkStart) / 1000 : null),
-      };
+      // Response fragments remain on the backend stream but are intentionally
+      // not rendered as an unvalidated draft in the workspace.
+      return s;
     case "backend_log":
       return pushLog(s, {
         ts: typeof e.ts === "string" ? e.ts : iso(now),
