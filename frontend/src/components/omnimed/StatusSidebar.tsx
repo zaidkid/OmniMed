@@ -17,7 +17,7 @@ type Service = {
   data?: unknown;
   checkedAt?: string;
 };
-type Props = { filename: string; patientId: string; characters: number };
+type Props = { filename: string; patientId: string; characters: number; children?: React.ReactNode };
 
 const OK = /^(ok|healthy|online|ready|running|connected|available|success|green|up)$/i;
 const BAD = /^(disconnected|down|error|failed|offline|unavailable|red)$/i;
@@ -173,7 +173,7 @@ const Row = ({ label, children, brk }: { label: string; children: React.ReactNod
   </div>
 );
 
-export default function StatusSidebar({ filename, patientId, characters }: Props) {
+export default function StatusSidebar({ filename, patientId, characters, children }: Props) {
   const [services, setServices] = useState(initial);
   const [refreshing, setRefreshing] = useState(false);
   const [details, setDetails] = useState<string | null>(null);
@@ -269,6 +269,7 @@ export default function StatusSidebar({ filename, patientId, characters }: Props
 
   return (
     <aside className="omni-right-sidebar">
+      {children}
       <Panel
         icon={<Activity size={18} />}
         color="green"

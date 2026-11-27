@@ -15,16 +15,16 @@ from app.services.clinical.care_plan_stream import router as care_plan_stream_ro
 async def lifespan(app: FastAPI):
     """Load and verify the configured Ollama model before serving requests."""
     print("\n========== OMNIMED STARTUP ==========")
-    print(f"Loading Qwen model: {OLLAMA_MODEL}...")
+    print(f"Loading LLM model: {OLLAMA_MODEL}...")
 
     try:
         await ollama_warm_up()
     except Exception as exc:
-        print(f"ERROR: Qwen model loading failed: {exc}")
+        print(f"ERROR: LLM model loading failed: {exc}")
         # Fail startup rather than running an API that cannot perform inference.
         raise
     else:
-        print(f"Qwen loaded successfully: {OLLAMA_MODEL}")
+        print(f"LLM loaded successfully: {OLLAMA_MODEL}")
 
     print("=====================================\n")
     yield

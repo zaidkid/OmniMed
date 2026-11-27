@@ -207,8 +207,8 @@ def _lexical_signals(result: dict[str, Any], terms: set[str]) -> tuple[set[str],
 
 
 def _passes_lexical_gate(title_hits: set[str], text_hits: set[str]) -> bool:
-    """Strict gate: a query term in the title, or at least two in the passage."""
-    return bool(title_hits) or len(text_hits) >= 2
+    """Require passage support; a title match alone is too easy to mis-rank."""
+    return len(text_hits) >= 2 or (bool(title_hits) and bool(text_hits))
 
 
 def _is_meta_result(result: dict[str, Any]) -> bool:
@@ -227,10 +227,31 @@ def _valid_result(result: dict[str, Any]) -> bool:
     return score >= MIN_EVIDENCE_SCORE
 
 
-def _excerpt(text: str, limit: int = MAX_EVIDENCE_CHARS) -> str:
+def _excerpt(
+    text: str,
+    limit: int = MAX_EVIDENCE_CHARS,
+    matched_terms: list[str] | set[str] | tuple[str, ...] = (),
+) -> str:
     text = re.sub(r"\s+", " ", clean_body(text)).strip()
     if len(text) <= limit:
         return text
+    terms = [str(term).casefold() for term in (matched_terms or []) if str(term).strip()]
+    sentences = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9])", text)
+    if terms and len(sentences) > 1:
+        ranked = sorted(
+            enumerate(sentences),
+            key=lambda pair: (
+                -sum(bool(re.search(rf"\b{re.escape(term)}\b", pair[1].casefold())) for term in terms),
+                pair[0],
+            ),
+        )
+        relevant = [sentence.strip() for _, sentence in ranked
+                    if any(re.search(rf"\b{re.escape(term)}\b", sentence.casefold()) for term in terms)]
+        excerpt = " ".join(relevant)
+        if excerpt:
+            if len(excerpt) > limit:
+                excerpt = excerpt[:limit].rsplit(" ", 1)[0].rstrip(" ,;:")
+            return excerpt + ("…" if len(excerpt) < len(text) else "")
     return text[:limit].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"
 
 
@@ -269,7 +290,11 @@ def _citation_record(result: dict[str, Any], number: int) -> dict[str, Any]:
         "page_label": page_label,
         "section": section,
         "url": url,
-        "excerpt": _excerpt(str(result.get("text") or "")),
+        "excerpt": _excerpt(
+            str(result.get("text") or ""),
+            limit=420,
+            matched_terms=result.get("matched_terms", []),
+        ),
         "text": str(result.get("text") or "").strip(),
         "score": score,
         "rank_score": result.get("rank_score"),
@@ -424,7 +449,10 @@ def build_evidence_context(results: list[dict[str, Any]]) -> str:
         page_label = str(result.get("page_label") or "Page not provided")
         section = str(result.get("section") or "Section not provided")
         url = str(result.get("url") or "URL not provided")
-        excerpt = _excerpt(str(result.get("text") or ""))
+        excerpt = _excerpt(
+            str(result.get("text") or ""),
+            matched_terms=result.get("matched_terms", []),
+        )
 
         sections.append(
             f"\n\n[{citation_id}] SOURCE CARD\n"

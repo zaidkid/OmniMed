@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   AlertCircle,
@@ -24,6 +24,7 @@ import {
 import { API } from "../components/Ui";
 import Sidebar from "../components/omnimed/Sidebar";
 import StatusSidebar from "../components/omnimed/StatusSidebar";
+import KnowledgeGraphPanel from "../components/omnimed/KnowledgeGraphPanel";
 import StructuredReport from "../components/omnimed/StructuredReport";
 import GenerationWorkspace from "../components/omnimed/GenerationWorkspace";
 import BriefResult from "../components/omnimed/BriefResult";
@@ -47,6 +48,20 @@ type UploadedDoc = {
   error?: string;
   fileUrl?: string;
   mimeType?: string;
+  vision_available?: boolean;
+  vision_model?: string | null;
+  vision_summary?: VisionSummary;
+  vision_error?: string;
+};
+
+type VisionSummary = {
+  summary: string;
+  observed_features: string[];
+  image_quality: string;
+  possible_modality: string;
+  uncertainties: string[];
+  clinician_review_questions: string[];
+  model: string;
 };
 
 type BackendHealth = "checking" | "online" | "offline";
@@ -54,6 +69,8 @@ type BackendHealth = "checking" | "online" | "offline";
 // Fixed question: the workspace offers a single "Generate brief" action.
 const BRIEF_QUESTION =
   "Summarize the important findings, identify uncertainties, and list what a clinician should review.";
+const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp"]);
+const isImageFile = (name: string) => IMAGE_EXTENSIONS.has(name.slice(name.lastIndexOf(".")).toLowerCase());
 
 function extractId(text: string): string {
   const patterns = [
@@ -110,7 +127,7 @@ function extractedList(value: unknown): string[] {
   return [...new Set(value.map(extractedValue).filter(Boolean))];
 }
 
-function patientContextFromReport(report: unknown, rawText: string) {
+function patientContextFromReport(report: unknown, rawText: string, sourceTitle: string) {
   const source = report && typeof report === "object"
     ? report as Record<string, unknown>
     : {};
@@ -157,6 +174,7 @@ function patientContextFromReport(report: unknown, rawText: string) {
   };
 
   return {
+    source_title: sourceTitle,
     conditions,
     medications,
     allergies,
@@ -227,6 +245,29 @@ export default function HomePage() {
   const demographics = extractDemographics(text);
   const extractedPatientId =
     extractId(text) || uploaded?.patient_id || patientId;
+  const graphPatientId = uploaded
+    ? extractedPatientId || "OMNI-DEMO-001"
+    : "";
+  const graphPatientState = useMemo(
+    () => {
+      if (!uploaded) return null;
+      const state = patientContextFromReport(uploaded.structured_report, text, uploaded.filename);
+      if (!uploaded.vision_summary) return state;
+      const visionNotes = [
+        "AI image observations (not a diagnosis): " + uploaded.vision_summary.summary,
+        ...(uploaded.vision_summary.observed_features ?? []),
+        ...(uploaded.vision_summary.uncertainties ?? []).map((item) => "Image-analysis uncertainty: " + item),
+        ...(uploaded.vision_summary.clinician_review_questions ?? []).map((item) => "Clinician review question: " + item),
+      ].filter(Boolean);
+      return {
+        ...state,
+        source_title: uploaded.filename + " (OCR and AI image observations)",
+        vision_summary: uploaded.vision_summary,
+        notes: [...state.notes, ...visionNotes],
+      };
+    },
+    [uploaded?.localId, uploaded?.structured_report, uploaded?.vision_summary, text],
+  );
 
   // Close the profile dropdown when clicking outside or pressing Escape.
   useEffect(() => {
@@ -363,6 +404,27 @@ export default function HomePage() {
       setUploadedDocs((previous) => [...previous, newDoc]);
       setSelectedId(newDoc.localId);
 
+      if (isImageFile(newDoc.filename)) {
+        if (newDoc.vision_available && newDoc.document_id) {
+          try {
+            const visionResponse = await fetch(API + "/api/documents/vision-summarize", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ document_id: newDoc.document_id, patient_id: data.patient_id || patientId.trim() || "OMNI-DEMO-001" }),
+            });
+            const vision = (await readResponse(visionResponse)) as VisionSummary;
+            setUploadedDocs((previous) => previous.map((doc) => doc.localId === newDoc.localId ? { ...doc, vision_summary: vision } : doc));
+          } catch (visionErr) {
+            const visionError = visionErr instanceof Error ? visionErr.message : "Image analysis failed.";
+            setUploadedDocs((previous) => previous.map((doc) => doc.localId === newDoc.localId ? { ...doc, vision_error: visionError } : doc));
+          }
+        } else {
+          setUploadedDocs((previous) => previous.map((doc) => doc.localId === newDoc.localId
+            ? { ...doc, vision_error: "Image analysis is not configured. Set OLLAMA_VISION_MODEL to an installed Ollama vision model and restart the backend." }
+            : doc));
+        }
+      }
+
       if (id) {
         setPatientId(id);
         setNotice(`Report uploaded. Patient ID extracted: ${id}`);
@@ -416,7 +478,7 @@ export default function HomePage() {
       return;
     }
 
-    const patientContext = patientContextFromReport(uploaded.structured_report, text);
+    const patientContext = patientContextFromReport(uploaded.structured_report, text, uploaded.filename);
     const request = {
       patient_state: {
         patient_id: id,
@@ -794,7 +856,7 @@ export default function HomePage() {
                     <input
                       ref={fileRef}
                       type="file"
-                      accept=".pdf,.csv,.txt,.md,.markdown"
+                      accept=".pdf,.csv,.txt,.md,.markdown,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp,image/*"
                       hidden
                       onClick={(event) => event.stopPropagation()}
                       onChange={(event) => {
@@ -996,6 +1058,46 @@ export default function HomePage() {
                 />
               )}
 
+              {uploaded && isImageFile(uploaded.filename) && (
+                <section className="omni-card" style={{ marginTop: 12 }}>
+                  <div className="omni-section-header">
+                    <div>
+                      <h2>Image analysis</h2>
+                      <p>
+                        {characters > 0
+                          ? "OCR extracted " + characters.toLocaleString() + " characters. Review the extracted text above."
+                          : "OCR did not find readable text in this image."}
+                      </p>
+                    </div>
+                  </div>
+                  {uploaded.vision_summary ? (
+                    <div style={{ padding: 14, borderRadius: 10, background: "#eff6ff", border: "1px solid #bfdbfe" }}>
+                      <strong>AI image observations · not a diagnosis</strong>
+                      <p>{uploaded.vision_summary.summary}</p>
+                      <p><strong>Possible modality:</strong> {uploaded.vision_summary.possible_modality}</p>
+                      <p><strong>Image quality:</strong> {uploaded.vision_summary.image_quality}</p>
+                      {!!uploaded.vision_summary.observed_features?.length && <>
+                        <strong>Observed features</strong>
+                        <ul>{uploaded.vision_summary.observed_features.map((item, index) => <li key={index}>{item}</li>)}</ul>
+                      </>}
+                      {!!uploaded.vision_summary.uncertainties?.length && <>
+                        <strong>Uncertainties</strong>
+                        <ul>{uploaded.vision_summary.uncertainties.map((item, index) => <li key={index}>{item}</li>)}</ul>
+                      </>}
+                      {!!uploaded.vision_summary.clinician_review_questions?.length && <>
+                        <strong>Clinician review</strong>
+                        <ul>{uploaded.vision_summary.clinician_review_questions.map((item, index) => <li key={index}>{item}</li>)}</ul>
+                      </>}
+                      <small>Model: {uploaded.vision_summary.model}. A qualified clinician or radiologist must review the original image.</small>
+                    </div>
+                  ) : uploaded.vision_error ? (
+                    <p role="status" style={{ color: "#475569" }}>{uploaded.vision_error}</p>
+                  ) : uploaded.vision_available ? (
+                    <p role="status">Image analysis is running…</p>
+                  ) : null}
+                </section>
+              )}
+
               <section className="omni-card" style={{ marginTop: 16 }}>
                 <div className="omni-section-header">
                   <div className="omni-section-title-wrap">
@@ -1062,9 +1164,16 @@ export default function HomePage() {
 
             <StatusSidebar
               filename={uploaded?.filename || ""}
-              patientId={patientId}
+              patientId={graphPatientId || patientId}
               characters={characters}
-            />
+            >
+              <KnowledgeGraphPanel
+                patientId={graphPatientId}
+                patientState={graphPatientState}
+                refreshKey={`${uploaded?.localId ?? "empty"}-${uploaded?.status ?? ""}-${generating ? "rag" : "idle"}`}
+                compact
+              />
+            </StatusSidebar>
           </div>
         </div>
       </div>

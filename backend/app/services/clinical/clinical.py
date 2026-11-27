@@ -11,7 +11,11 @@ from app.services.evidence.evidence import (
     search_evidence,
     evidence_context,
 )
-from app.services.ai.llm import THINK_ENABLED, ollama_generate, ollama_generate_stream, ollama_model_status
+from app.services.ai.llm import (
+    BRIEF_ANSWER_NUM_PREDICT, BRIEF_THINK_BUDGET_CHARS,
+    BRIEF_THINK_BUDGET_SECONDS, BRIEF_THINK_ENABLED,
+    ollama_generate, ollama_generate_stream, ollama_model_status,
+)
 from app.core.config import OLLAMA_MODEL
 from app.services.clinical.triage import URGENCY_LABELS, merge_urgency, screen_report
 from app.services.clinical.clinical_verifier import (
@@ -44,13 +48,12 @@ CLINICAL_BRIEF_SCHEMA = {
     "additionalProperties": False,
 }
 
-# Keep the full clinical brief as the default; use OMNIMED_DETAIL=brief for a
-# shorter response when needed.
-DETAIL = os.getenv("OMNIMED_DETAIL", "detailed").strip().lower()
+# Use a concise clinical brief by default; set OMNIMED_DETAIL=detailed to expand.
+DETAIL = os.getenv("OMNIMED_DETAIL", "brief").strip().lower()
 LIMITS = (
     "summary at most 2 sentences; every list at most 4 items, each at most 25 words."
     if DETAIL != "brief" else
-    "summary at most 20 words; every list at most 2 items, each at most 15 words."
+    "summary at most 2 sentences; every list at most 2 items, each at most 10 words."
 )
 
 RETRY_NOTE = (
@@ -63,7 +66,7 @@ RETRY_NOTE = (
 def extract_json(text: str) -> dict:
     """Parse one complete JSON object from an Ollama response."""
     if not text or not text.strip():
-        raise ValueError("Qwen returned an empty response.")
+        raise ValueError("LLM returned an empty response.")
 
     text = text.strip()
     text = re.sub(r"^\s*```(?:json)?\s*", "", text, flags=re.IGNORECASE)
@@ -79,7 +82,7 @@ def extract_json(text: str) -> dict:
     # Handle explanatory text surrounding an otherwise complete object.
     start = text.find("{")
     if start < 0:
-        raise ValueError("Qwen response contains no JSON object.")
+        raise ValueError("LLM response contains no JSON object.")
 
     depth = 0
     in_string = False
@@ -113,7 +116,7 @@ def extract_json(text: str) -> dict:
                 except json.JSONDecodeError:
                     break
 
-    raise ValueError("Qwen returned incomplete or invalid JSON.")
+    raise ValueError("LLM returned incomplete or invalid JSON.")
 
 
 def normalize_string_list(value: Any, maximum: int = 3) -> list[str]:
@@ -265,7 +268,7 @@ def attach_verification(
 
 MAX_QUERY_CONDITIONS = 3
 MAX_QUERY_SYMPTOMS = 3
-MAX_EVIDENCE_QUERIES = 6
+MAX_EVIDENCE_QUERIES = 2
 GENERIC_QUESTION_TERMS = {
     "summarize", "summary", "important", "findings", "identify", "uncertainties",
     "uncertainty", "list", "clinician", "review", "clinical", "patient", "report",
@@ -368,8 +371,8 @@ def safe_evidence_text(evidence: list[dict[str, Any]]) -> str:
         return "No relevant evidence was found in the indexed knowledge base."
 
 
-MAX_NOTE_CHARS = 6000
-MAX_EVIDENCE_CHARS = 2000
+MAX_NOTE_CHARS = 2400
+MAX_EVIDENCE_CHARS = 800
 
 
 def compact_patient(state: PatientState) -> str:
@@ -380,10 +383,16 @@ def compact_patient(state: PatientState) -> str:
     data = {k: v for k, v in state.model_dump().items() if v not in (None, "", [], {})}
     notes = data.get("notes")
     if isinstance(notes, list):
-        data["notes"] = [
-            n if len(str(n)) <= MAX_NOTE_CHARS else str(n)[:MAX_NOTE_CHARS] + " [report truncated for length]"
-            for n in notes
-        ]
+        compact_notes = []
+        for note in notes:
+            text = str(note)
+            if len(text) > MAX_NOTE_CHARS:
+                marker = " [middle omitted] "
+                head = 1500
+                tail = MAX_NOTE_CHARS - head - len(marker)
+                text = text[:head] + marker + text[-tail:]
+            compact_notes.append(text)
+        data["notes"] = compact_notes
     return json.dumps(data, ensure_ascii=False, separators=(",", ":"), default=str)
 
 
@@ -497,20 +506,21 @@ async def generate_clinical_brief(
     for attempt in range(2):
         try:
             llm_start = time.perf_counter()
-            print(f"[OmniMed] Sending request to Qwen (attempt {attempt + 1}/2)...")
+            print(f"[OmniMed] Sending request to LLM (attempt {attempt + 1}/2)...")
 
             raw_response = await ollama_generate(
                 build_prompt(state, evidence_text, clinical_question, retry=attempt == 1),
                 output_schema=CLINICAL_BRIEF_SCHEMA,
+                num_predict=BRIEF_ANSWER_NUM_PREDICT,
             )
 
-            print(f"[OmniMed] Qwen generation: {time.perf_counter() - llm_start:.2f}s")
-            print(f"[OmniMed] Qwen response length: {len(raw_response)} characters")
+            print(f"[OmniMed] LLM generation: {time.perf_counter() - llm_start:.2f}s")
+            print(f"[OmniMed] LLM response length: {len(raw_response)} characters")
 
             result = extract_json(raw_response)
 
             if not validate_clinical_brief(result):
-                raise ValueError("Qwen response does not match the required schema.")
+                raise ValueError("LLM response does not match the required schema.")
 
             brief = attach_verification(
                 assemble_brief(state, result, evidence, triage), state, evidence
@@ -598,6 +608,9 @@ async def generate_clinical_brief_stream(state: PatientState, clinical_question=
     # 2. Evidence retrieval (blocking client -> worker thread keeps the stream live)
     yield stage("evidence_retrieval", "active", "Retrieving evidence",
                 "Searching the indexed medical knowledge base.")
+    # Query Ollama runtime while retrieval runs instead of adding another
+    # serialized round trip before the model request.
+    model_status_task = asyncio.create_task(ollama_model_status())
     evidence: list[dict[str, Any]] = []
     evidence_failed = False
     evidence_start = time.perf_counter()
@@ -626,7 +639,10 @@ async def generate_clinical_brief_stream(state: PatientState, clinical_question=
     # 3-4. Generation (reasoning is time-budgeted) and validation ---------------
     prompt = build_prompt(state, evidence_text, clinical_question)
     yield log_event(f"Prompt size: {len(prompt):,} characters")
-    status = await ollama_model_status()
+    yield log_event(
+        f"Inference limits: {len(evidence_queries)} evidence searches, {BRIEF_ANSWER_NUM_PREDICT} answer tokens, "
+        + (f"{BRIEF_THINK_BUDGET_SECONDS:g}s thinking window" if BRIEF_THINK_ENABLED else "thinking off"))
+    status = await model_status_task
     if status["loaded"] is False:
         yield log_event("Model is not loaded in Ollama. This request must load it first, which can "
                         "take 30+ s. It then stays loaded for 30 minutes.", "warn")
@@ -637,19 +653,25 @@ async def generate_clinical_brief_stream(state: PatientState, clinical_question=
             f"Model loaded in Ollama, {gpu if gpu is not None else '?'}% in GPU memory"
             + (" (the rest runs on CPU, which makes prompt processing and generation much slower)" if slow else ""),
             "warn" if slow else "info")
-    if not THINK_ENABLED:
-        yield log_event("Reasoning is turned off (OMNIMED_THINK=off) for speed.")
-    yield log_event("Sending request to Qwen...")
-    yield stage("qwen_generation", "active", "Qwen is generating the clinical brief",
+    if BRIEF_THINK_ENABLED:
+        yield log_event(
+            f"Showing Qwen thinking for up to {BRIEF_THINK_BUDGET_SECONDS:g} seconds, then switching to the concise answer.")
+    else:
+        yield log_event("Qwen thinking is disabled for this brief to minimize latency.")
+    yield log_event("Sending request to LLM...")
+    yield stage("llm_generation", "active", "LLM is generating the clinical brief",
                 "Receiving streamed output from Ollama.")
 
     parts: list[str] = []
-    phase = "qwen_generation"
+    phase = "llm_generation"
     llm_start = time.perf_counter()
     last_error: Exception | None = None
     try:
         async for item in ollama_generate_stream(
-            prompt, output_schema=CLINICAL_BRIEF_SCHEMA, think=THINK_ENABLED,
+            prompt, output_schema=CLINICAL_BRIEF_SCHEMA, think=BRIEF_THINK_ENABLED,
+            think_budget_seconds=BRIEF_THINK_BUDGET_SECONDS,
+            think_budget_chars=BRIEF_THINK_BUDGET_CHARS,
+            answer_num_predict=BRIEF_ANSWER_NUM_PREDICT,
         ):
             kind = item.get("type")
             if kind == "first_token":
@@ -684,9 +706,9 @@ async def generate_clinical_brief_stream(state: PatientState, clinical_question=
                         f"prompt {(item.get('prompt_eval_duration') or 0) / 1e9:.1f}s)")
 
         raw_response = "".join(parts).strip()
-        yield log_event(f"Qwen generation: {time.perf_counter() - llm_start:.2f}s", "ok")
-        yield log_event(f"Qwen response length: {len(raw_response)} characters")
-        yield stage("qwen_generation", "completed", "Qwen generation finished",
+        yield log_event(f"LLM generation: {time.perf_counter() - llm_start:.2f}s", "ok")
+        yield log_event(f"LLM response length: {len(raw_response)} characters")
+        yield stage("llm_generation", "completed", "LLM generation finished",
                     f"{len(raw_response):,} characters generated.", llm_start)
 
         phase = "validation"
@@ -696,8 +718,8 @@ async def generate_clinical_brief_stream(state: PatientState, clinical_question=
 
         result = extract_json(raw_response)
         if not validate_clinical_brief(result):
-            raise ValueError("Qwen response does not match the required schema.")
-        yield log_event("Qwen response parsed successfully.", "ok")
+            raise ValueError("LLM response does not match the required schema.")
+        yield log_event("LLM response parsed successfully.", "ok")
 
         brief = attach_verification(assemble_brief(state, result, evidence, triage), state, evidence)
         brief["generation_meta"] = meta()
@@ -718,7 +740,7 @@ async def generate_clinical_brief_stream(state: PatientState, clinical_question=
         last_error = error
         yield log_event(f"Generation failed during {phase}: {error!r}", "error")
         yield stage(phase, "failed",
-                    "Generation failed" if phase == "qwen_generation" else "Validation failed",
+                    "Generation failed" if phase == "llm_generation" else "Validation failed",
                     str(error)[:240])
 
     # 5. Fallback (immediate, no second model call) -----------------------------

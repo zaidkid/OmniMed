@@ -34,13 +34,18 @@ OLLAMA_NUM_PREDICT = 4096
 # The SAME num_ctx must be used by warm-up and generation, otherwise Ollama
 # reloads the model (this is what makes a "first token" take a minute).
 BRIEF_NUM_CTX = int(_env_number("OMNIMED_NUM_CTX", 4096))
-BRIEF_NUM_PREDICT = int(_env_number("OMNIMED_NUM_PREDICT", 1500))
+BRIEF_NUM_PREDICT = int(_env_number("OMNIMED_NUM_PREDICT", 1200))
 THINK_BUDGET_SECONDS = _env_number("OMNIMED_THINK_BUDGET_SECONDS", 15)
 THINK_BUDGET_CHARS = int(_env_number("OMNIMED_THINK_BUDGET_CHARS", 1500))
-# Restore enough answer budget for the complete structured clinical brief.
-BRIEF_ANSWER_NUM_PREDICT = int(_env_number("OMNIMED_ANSWER_NUM_PREDICT", 900))
-# Keep the model's visible reasoning enabled by default; its generation is
-# bounded above so the brief can stay responsive on CPU-only machines.
+# Keep enough output room for the complete but concise structured brief.
+BRIEF_ANSWER_NUM_PREDICT = int(_env_number("OMNIMED_ANSWER_NUM_PREDICT", 450))
+# Keep brief thinking bounded: after the configured window, Qwen is asked for a
+# concise answer without thinking rather than continuing an unbounded trace.
+BRIEF_THINK_ENABLED = os.getenv("OMNIMED_BRIEF_THINK", "on").strip().lower() not in {"0", "off", "false", "no"}
+BRIEF_THINK_BUDGET_SECONDS = _env_number("OMNIMED_BRIEF_THINK_SECONDS", 10)
+BRIEF_THINK_BUDGET_CHARS = int(_env_number("OMNIMED_BRIEF_THINK_CHARS", 0))
+# Other generation paths use the general thinking setting; brief generation has
+# its own shorter, fixed budget above.
 THINK_ENABLED = os.getenv("OMNIMED_THINK", "on").strip().lower() not in {"0", "off", "false", "no"}
 
 

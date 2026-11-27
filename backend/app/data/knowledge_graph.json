@@ -1,0 +1,1643 @@
+{
+  "nodes": {
+    "disease:52e6563980b3d692681a1601": {
+      "id": "disease:52e6563980b3d692681a1601",
+      "label": "Type 2",
+      "name": "Type 2",
+      "type": "Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:5e1c2dae7dd54e3c6f21a1d7",
+          "snippet": "Oral antidiabetic medications are used in the management of type 2 diabetes.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "disease:dd9c34bc6d89ee6788336f4a": {
+      "id": "disease:dd9c34bc6d89ee6788336f4a",
+      "label": "Diabetes",
+      "name": "Diabetes",
+      "type": "Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:5e1c2dae7dd54e3c6f21a1d7",
+          "snippet": "Oral antidiabetic medications are used in the management of type 2 diabetes.",
+          "confidence": 0.94
+        },
+        {
+          "source_id": "ncbi-diabetes-overview",
+          "source_title": "Overview: Type 2 Diabetes",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK279509/",
+          "page": null,
+          "chunk_id": "ncbi-diabetes-overview:demo:12e23506ad9ef0aebd49b384",
+          "snippet": "Diabetes may damage small blood vessels and can affect larger blood vessels.",
+          "confidence": 0.86
+        },
+        {
+          "source_id": "ncbi-diabetes-manifestations",
+          "source_title": "Diabetes Mellitus: Clinical Manifestations",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK242/",
+          "page": null,
+          "chunk_id": "ncbi-diabetes-manifestations:demo:36634a05a13757259f810cb8",
+          "snippet": "Muscle weakness and atrophy may be present with diabetic neuropathic amyotrophy.",
+          "confidence": 0.82
+        }
+      ]
+    },
+    "drug:a08cd9c3f0d5b5098f1d9be3": {
+      "id": "drug:a08cd9c3f0d5b5098f1d9be3",
+      "label": "Metformin",
+      "name": "Metformin",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:7296979253a34ca0dcde207c",
+          "snippet": "Biguanides: metformin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "disease:1479dff537b1e1b89ce55847": {
+      "id": "disease:1479dff537b1e1b89ce55847",
+      "label": "Type 2 Diabetes",
+      "name": "Type 2 Diabetes",
+      "type": "Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:7296979253a34ca0dcde207c",
+          "snippet": "Biguanides: metformin.",
+          "confidence": 0.94
+        },
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:d78523b83deb1c0383802d8a",
+          "snippet": "Sulfonylureas: glipizide, glyburide, gliclazide, glimepiride.",
+          "confidence": 0.94
+        },
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:246a6ccaaa0088b909e0c421",
+          "snippet": "Meglitinides (glinides): repaglinide, nateglinide.",
+          "confidence": 0.94
+        },
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:d28b027ee8da329bda7fd5a2",
+          "snippet": "Thiazolidinediones include pioglitazone and rosiglitazone.",
+          "confidence": 0.94
+        },
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:a8a33473c8f5783fd98c8bf9",
+          "snippet": "First generation sulfonylureas include tolbutamide.",
+          "confidence": 0.94
+        },
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:ef57ac1b950750c211f0f05a",
+          "snippet": "First generation sulfonylureas include chlorpropamide.",
+          "confidence": 0.94
+        },
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:6f4fec80624a7f568c96bd1b",
+          "snippet": "First generation sulfonylureas include tolazamide.",
+          "confidence": 0.94
+        },
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:94a727767232d5ee33dd1082",
+          "snippet": "First generation sulfonylureas include acetohexamide.",
+          "confidence": 0.94
+        },
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:1227af2c83b45e915264d815",
+          "snippet": "Alpha-glucosidase inhibitors include acarbose, miglitol, and voglibose.",
+          "confidence": 0.94
+        },
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:a8e916d773f467e7eac7997b",
+          "snippet": "DPP-4 inhibitors include sitagliptin, saxagliptin, linagliptin, and alogliptin.",
+          "confidence": 0.94
+        },
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:c56cdc824979a8c988e76788",
+          "snippet": "SGLT2 inhibitors include empagliflozin, dapagliflozin, canagliflozin, and ertugliflozin.",
+          "confidence": 0.94
+        },
+        {
+          "source_id": "niddk-diagnosis",
+          "source_title": "Diabetes & Prediabetes Tests",
+          "source_url": "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/diabetes/diabetes-prediabetes",
+          "page": null,
+          "chunk_id": "niddk-diagnosis:demo:8d96e4fe85f2a8c590e2e91f",
+          "snippet": "The A1C test is used to screen for and diagnose type 2 diabetes; 6.5% or higher should be repeated for confirmation.",
+          "confidence": 0.98
+        },
+        {
+          "source_id": "niddk-diagnosis",
+          "source_title": "Diabetes & Prediabetes Tests",
+          "source_url": "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/diabetes/diabetes-prediabetes",
+          "page": null,
+          "chunk_id": "niddk-diagnosis:demo:c55cd76799dc33f960505b2f",
+          "snippet": "Fasting plasma glucose is used to screen for and diagnose diabetes; 126 mg/dL or higher should be repeated for confirmation.",
+          "confidence": 0.98
+        },
+        {
+          "source_id": "niddk-diagnosis",
+          "source_title": "Diabetes & Prediabetes Tests",
+          "source_url": "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/diabetes/diabetes-prediabetes",
+          "page": null,
+          "chunk_id": "niddk-diagnosis:demo:bc374be2483d4b31c51c03f6",
+          "snippet": "The oral glucose tolerance test is used to screen for and diagnose diabetes; 2-hour glucose of 200 mg/dL or higher should be repeated.",
+          "confidence": 0.98
+        },
+        {
+          "source_id": "niddk-diagnosis",
+          "source_title": "Diabetes & Prediabetes Tests",
+          "source_url": "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/diabetes/diabetes-prediabetes",
+          "page": null,
+          "chunk_id": "niddk-diagnosis:demo:7dd6b351087f313f4bb570c6",
+          "snippet": "Random plasma glucose is used for diagnosis with classic symptoms of hyperglycemia or hyperglycemic crisis; 200 mg/dL or higher.",
+          "confidence": 0.98
+        },
+        {
+          "source_id": "niddk-insulin-resistance",
+          "source_title": "Insulin Resistance & Prediabetes",
+          "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance",
+          "page": null,
+          "chunk_id": "niddk-insulin-resistance:demo:d8969404b0df996df64ab4fd",
+          "snippet": "Insulin resistance means that cells in your muscles, fat, and liver don’t respond well to insulin.",
+          "confidence": 0.93
+        },
+        {
+          "source_id": "niddk-insulin-resistance",
+          "source_title": "Insulin Resistance & Prediabetes",
+          "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance",
+          "page": null,
+          "chunk_id": "niddk-insulin-resistance:demo:79342a31741d1af3c556e9be",
+          "snippet": "Over time, the pancreas may not make enough insulin to help extra glucose enter cells.",
+          "confidence": 0.92
+        },
+        {
+          "source_id": "niddk-insulin-resistance",
+          "source_title": "Insulin Resistance & Prediabetes",
+          "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance",
+          "page": null,
+          "chunk_id": "niddk-insulin-resistance:demo:79342a31741d1af3c556e9be",
+          "snippet": "Over time, the pancreas may not make enough insulin to help extra glucose enter cells.",
+          "confidence": 0.9
+        }
+      ]
+    },
+    "drug:1015b37a0b53bd64e67b19c8": {
+      "id": "drug:1015b37a0b53bd64e67b19c8",
+      "label": "Gliclazide",
+      "name": "Gliclazide",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:d78523b83deb1c0383802d8a",
+          "snippet": "Sulfonylureas: glipizide, glyburide, gliclazide, glimepiride.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:0cce45d56c4e2cccc828ea62": {
+      "id": "drug:0cce45d56c4e2cccc828ea62",
+      "label": "Glimepiride",
+      "name": "Glimepiride",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:d78523b83deb1c0383802d8a",
+          "snippet": "Sulfonylureas: glipizide, glyburide, gliclazide, glimepiride.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:b9920e1b7e5b39f2e78c05d7": {
+      "id": "drug:b9920e1b7e5b39f2e78c05d7",
+      "label": "Glipizide",
+      "name": "Glipizide",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:d78523b83deb1c0383802d8a",
+          "snippet": "Sulfonylureas: glipizide, glyburide, gliclazide, glimepiride.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:ff32a8f71404f74104afb350": {
+      "id": "drug:ff32a8f71404f74104afb350",
+      "label": "Glyburide",
+      "name": "Glyburide",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:d78523b83deb1c0383802d8a",
+          "snippet": "Sulfonylureas: glipizide, glyburide, gliclazide, glimepiride.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:1a8451fa9f01b401e369441d": {
+      "id": "drug:1a8451fa9f01b401e369441d",
+      "label": "Nateglinide",
+      "name": "Nateglinide",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:246a6ccaaa0088b909e0c421",
+          "snippet": "Meglitinides (glinides): repaglinide, nateglinide.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:609d47641053658c7201a607": {
+      "id": "drug:609d47641053658c7201a607",
+      "label": "Repaglinide",
+      "name": "Repaglinide",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:246a6ccaaa0088b909e0c421",
+          "snippet": "Meglitinides (glinides): repaglinide, nateglinide.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:852d457b1980798adcd63b61": {
+      "id": "drug:852d457b1980798adcd63b61",
+      "label": "Rosiglitazone",
+      "name": "Rosiglitazone",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:d28b027ee8da329bda7fd5a2",
+          "snippet": "Thiazolidinediones include pioglitazone and rosiglitazone.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:f1b3b48eee1b3788cade1e32": {
+      "id": "drug:f1b3b48eee1b3788cade1e32",
+      "label": "Pioglitazone",
+      "name": "Pioglitazone",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:d28b027ee8da329bda7fd5a2",
+          "snippet": "Thiazolidinediones include pioglitazone and rosiglitazone.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:fadbce4a7f59f949cb7dacb3": {
+      "id": "drug:fadbce4a7f59f949cb7dacb3",
+      "label": "Tolbutamide",
+      "name": "Tolbutamide",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:a8a33473c8f5783fd98c8bf9",
+          "snippet": "First generation sulfonylureas include tolbutamide.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:e2313d0538e8911803082fa0": {
+      "id": "drug:e2313d0538e8911803082fa0",
+      "label": "Chlorpropamide",
+      "name": "Chlorpropamide",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:ef57ac1b950750c211f0f05a",
+          "snippet": "First generation sulfonylureas include chlorpropamide.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:d7e913fc624be953f4fdd462": {
+      "id": "drug:d7e913fc624be953f4fdd462",
+      "label": "Tolazamide",
+      "name": "Tolazamide",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:6f4fec80624a7f568c96bd1b",
+          "snippet": "First generation sulfonylureas include tolazamide.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:3968fdfc8b80de36bbc73a6b": {
+      "id": "drug:3968fdfc8b80de36bbc73a6b",
+      "label": "Acetohexamide",
+      "name": "Acetohexamide",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:94a727767232d5ee33dd1082",
+          "snippet": "First generation sulfonylureas include acetohexamide.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:53bf47fb02075bf96079cc28": {
+      "id": "drug:53bf47fb02075bf96079cc28",
+      "label": "Acarbose",
+      "name": "Acarbose",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:1227af2c83b45e915264d815",
+          "snippet": "Alpha-glucosidase inhibitors include acarbose, miglitol, and voglibose.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:b94f0916d72f9b3c70b2af07": {
+      "id": "drug:b94f0916d72f9b3c70b2af07",
+      "label": "Miglitol",
+      "name": "Miglitol",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:1227af2c83b45e915264d815",
+          "snippet": "Alpha-glucosidase inhibitors include acarbose, miglitol, and voglibose.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:b054fc5f6054a2c26ef4b706": {
+      "id": "drug:b054fc5f6054a2c26ef4b706",
+      "label": "Voglibose",
+      "name": "Voglibose",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:1227af2c83b45e915264d815",
+          "snippet": "Alpha-glucosidase inhibitors include acarbose, miglitol, and voglibose.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:38a940db6044d6049db1b8b4": {
+      "id": "drug:38a940db6044d6049db1b8b4",
+      "label": "Sitagliptin",
+      "name": "Sitagliptin",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:a8e916d773f467e7eac7997b",
+          "snippet": "DPP-4 inhibitors include sitagliptin, saxagliptin, linagliptin, and alogliptin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:c2c22cd628a0262d49f5182c": {
+      "id": "drug:c2c22cd628a0262d49f5182c",
+      "label": "Saxagliptin",
+      "name": "Saxagliptin",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:a8e916d773f467e7eac7997b",
+          "snippet": "DPP-4 inhibitors include sitagliptin, saxagliptin, linagliptin, and alogliptin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:8bc65ad24607c06233330a52": {
+      "id": "drug:8bc65ad24607c06233330a52",
+      "label": "Linagliptin",
+      "name": "Linagliptin",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:a8e916d773f467e7eac7997b",
+          "snippet": "DPP-4 inhibitors include sitagliptin, saxagliptin, linagliptin, and alogliptin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:6704f1a9123f8d599eb0aa0b": {
+      "id": "drug:6704f1a9123f8d599eb0aa0b",
+      "label": "Alogliptin",
+      "name": "Alogliptin",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:a8e916d773f467e7eac7997b",
+          "snippet": "DPP-4 inhibitors include sitagliptin, saxagliptin, linagliptin, and alogliptin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:f73b126d404aaf73df92f96b": {
+      "id": "drug:f73b126d404aaf73df92f96b",
+      "label": "Empagliflozin",
+      "name": "Empagliflozin",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:c56cdc824979a8c988e76788",
+          "snippet": "SGLT2 inhibitors include empagliflozin, dapagliflozin, canagliflozin, and ertugliflozin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:9edc9be1660bf9f7ef200e13": {
+      "id": "drug:9edc9be1660bf9f7ef200e13",
+      "label": "Dapagliflozin",
+      "name": "Dapagliflozin",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:c56cdc824979a8c988e76788",
+          "snippet": "SGLT2 inhibitors include empagliflozin, dapagliflozin, canagliflozin, and ertugliflozin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:86dbff6945e26d913f2a45a1": {
+      "id": "drug:86dbff6945e26d913f2a45a1",
+      "label": "Canagliflozin",
+      "name": "Canagliflozin",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:c56cdc824979a8c988e76788",
+          "snippet": "SGLT2 inhibitors include empagliflozin, dapagliflozin, canagliflozin, and ertugliflozin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "drug:ca9b4b24911284a0a026204d": {
+      "id": "drug:ca9b4b24911284a0a026204d",
+      "label": "Ertugliflozin",
+      "name": "Ertugliflozin",
+      "type": "Drug",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:c56cdc824979a8c988e76788",
+          "snippet": "SGLT2 inhibitors include empagliflozin, dapagliflozin, canagliflozin, and ertugliflozin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "test_items:281b6c48597a8decc36e3c12": {
+      "id": "test_items:281b6c48597a8decc36e3c12",
+      "label": "HbA1c",
+      "name": "HbA1c",
+      "type": "Test_Items",
+      "provenance": [
+        {
+          "source_id": "niddk-diagnosis",
+          "source_title": "Diabetes & Prediabetes Tests",
+          "source_url": "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/diabetes/diabetes-prediabetes",
+          "page": null,
+          "chunk_id": "niddk-diagnosis:demo:8d96e4fe85f2a8c590e2e91f",
+          "snippet": "The A1C test is used to screen for and diagnose type 2 diabetes; 6.5% or higher should be repeated for confirmation.",
+          "confidence": 0.98
+        }
+      ]
+    },
+    "test_items:2f7f2dfd78fe47a6ba0a0110": {
+      "id": "test_items:2f7f2dfd78fe47a6ba0a0110",
+      "label": "Fasting Blood Glucose",
+      "name": "Fasting Blood Glucose",
+      "type": "Test_Items",
+      "provenance": [
+        {
+          "source_id": "niddk-diagnosis",
+          "source_title": "Diabetes & Prediabetes Tests",
+          "source_url": "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/diabetes/diabetes-prediabetes",
+          "page": null,
+          "chunk_id": "niddk-diagnosis:demo:c55cd76799dc33f960505b2f",
+          "snippet": "Fasting plasma glucose is used to screen for and diagnose diabetes; 126 mg/dL or higher should be repeated for confirmation.",
+          "confidence": 0.98
+        }
+      ]
+    },
+    "test_items:648db22836a68e35346dace9": {
+      "id": "test_items:648db22836a68e35346dace9",
+      "label": "2h Blood Glucose",
+      "name": "2h Blood Glucose",
+      "type": "Test_Items",
+      "provenance": [
+        {
+          "source_id": "niddk-diagnosis",
+          "source_title": "Diabetes & Prediabetes Tests",
+          "source_url": "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/diabetes/diabetes-prediabetes",
+          "page": null,
+          "chunk_id": "niddk-diagnosis:demo:bc374be2483d4b31c51c03f6",
+          "snippet": "The oral glucose tolerance test is used to screen for and diagnose diabetes; 2-hour glucose of 200 mg/dL or higher should be repeated.",
+          "confidence": 0.98
+        }
+      ]
+    },
+    "test_items:9fc13f2a590b1593d252ff87": {
+      "id": "test_items:9fc13f2a590b1593d252ff87",
+      "label": "Random Blood Glucose",
+      "name": "Random Blood Glucose",
+      "type": "Test_Items",
+      "provenance": [
+        {
+          "source_id": "niddk-diagnosis",
+          "source_title": "Diabetes & Prediabetes Tests",
+          "source_url": "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/diabetes/diabetes-prediabetes",
+          "page": null,
+          "chunk_id": "niddk-diagnosis:demo:7dd6b351087f313f4bb570c6",
+          "snippet": "Random plasma glucose is used for diagnosis with classic symptoms of hyperglycemia or hyperglycemic crisis; 200 mg/dL or higher.",
+          "confidence": 0.98
+        }
+      ]
+    },
+    "mechanism:e3d37f4ad7f5401f9b7bceb6": {
+      "id": "mechanism:e3d37f4ad7f5401f9b7bceb6",
+      "label": "Insulin Resistance",
+      "name": "Insulin Resistance",
+      "type": "Mechanism",
+      "provenance": [
+        {
+          "source_id": "niddk-insulin-resistance",
+          "source_title": "Insulin Resistance & Prediabetes",
+          "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance",
+          "page": null,
+          "chunk_id": "niddk-insulin-resistance:demo:d8969404b0df996df64ab4fd",
+          "snippet": "Insulin resistance means that cells in your muscles, fat, and liver don’t respond well to insulin.",
+          "confidence": 0.93
+        }
+      ]
+    },
+    "pathogenesis:33157b657d505b2d9cf4bb48": {
+      "id": "pathogenesis:33157b657d505b2d9cf4bb48",
+      "label": "Decline in Insulin Secretion",
+      "name": "Decline in Insulin Secretion",
+      "type": "Pathogenesis",
+      "provenance": [
+        {
+          "source_id": "niddk-insulin-resistance",
+          "source_title": "Insulin Resistance & Prediabetes",
+          "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance",
+          "page": null,
+          "chunk_id": "niddk-insulin-resistance:demo:79342a31741d1af3c556e9be",
+          "snippet": "Over time, the pancreas may not make enough insulin to help extra glucose enter cells.",
+          "confidence": 0.92
+        }
+      ]
+    },
+    "pathogenesis:56d6886fc8ba37c59d850ac7": {
+      "id": "pathogenesis:56d6886fc8ba37c59d850ac7",
+      "label": "Poorer Insulin Secretion",
+      "name": "Poorer Insulin Secretion",
+      "type": "Pathogenesis",
+      "provenance": [
+        {
+          "source_id": "niddk-insulin-resistance",
+          "source_title": "Insulin Resistance & Prediabetes",
+          "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance",
+          "page": null,
+          "chunk_id": "niddk-insulin-resistance:demo:79342a31741d1af3c556e9be",
+          "snippet": "Over time, the pancreas may not make enough insulin to help extra glucose enter cells.",
+          "confidence": 0.9
+        }
+      ]
+    },
+    "anatomy:39cc13caec65b67e76baa636": {
+      "id": "anatomy:39cc13caec65b67e76baa636",
+      "label": "Blood Vessels",
+      "name": "Blood Vessels",
+      "type": "Anatomy",
+      "provenance": [
+        {
+          "source_id": "ncbi-diabetes-overview",
+          "source_title": "Overview: Type 2 Diabetes",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK279509/",
+          "page": null,
+          "chunk_id": "ncbi-diabetes-overview:demo:12e23506ad9ef0aebd49b384",
+          "snippet": "Diabetes may damage small blood vessels and can affect larger blood vessels.",
+          "confidence": 0.86
+        }
+      ]
+    },
+    "symptom:b232b58e65490bbebf32138a": {
+      "id": "symptom:b232b58e65490bbebf32138a",
+      "label": "Atrophy",
+      "name": "Atrophy",
+      "type": "Symptom",
+      "provenance": [
+        {
+          "source_id": "ncbi-diabetes-manifestations",
+          "source_title": "Diabetes Mellitus: Clinical Manifestations",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK242/",
+          "page": null,
+          "chunk_id": "ncbi-diabetes-manifestations:demo:36634a05a13757259f810cb8",
+          "snippet": "Muscle weakness and atrophy may be present with diabetic neuropathic amyotrophy.",
+          "confidence": 0.82
+        }
+      ]
+    },
+    "symptom:a36a104ee975b603e023280f": {
+      "id": "symptom:a36a104ee975b603e023280f",
+      "label": "Muscle Weakness",
+      "name": "Muscle Weakness",
+      "type": "Symptom",
+      "provenance": [
+        {
+          "source_id": "ncbi-diabetes-manifestations",
+          "source_title": "Diabetes Mellitus: Clinical Manifestations",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK242/",
+          "page": null,
+          "chunk_id": "ncbi-diabetes-manifestations:demo:36634a05a13757259f810cb8",
+          "snippet": "Muscle weakness and atrophy may be present with diabetic neuropathic amyotrophy.",
+          "confidence": 0.82
+        }
+      ]
+    }
+  },
+  "edges": {
+    "edge:0a3280feed9e5c92e231df31": {
+      "id": "edge:0a3280feed9e5c92e231df31",
+      "source": "disease:52e6563980b3d692681a1601",
+      "target": "disease:dd9c34bc6d89ee6788336f4a",
+      "type": "Subtype_Of",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:5e1c2dae7dd54e3c6f21a1d7",
+          "snippet": "Oral antidiabetic medications are used in the management of type 2 diabetes.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:50922d4c7b8299473c528620": {
+      "id": "edge:50922d4c7b8299473c528620",
+      "source": "drug:a08cd9c3f0d5b5098f1d9be3",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:7296979253a34ca0dcde207c",
+          "snippet": "Biguanides: metformin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:5797efa29a31ff417cf10fda": {
+      "id": "edge:5797efa29a31ff417cf10fda",
+      "source": "drug:1015b37a0b53bd64e67b19c8",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:d78523b83deb1c0383802d8a",
+          "snippet": "Sulfonylureas: glipizide, glyburide, gliclazide, glimepiride.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:16156754fdbda2e979c27759": {
+      "id": "edge:16156754fdbda2e979c27759",
+      "source": "drug:0cce45d56c4e2cccc828ea62",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:d78523b83deb1c0383802d8a",
+          "snippet": "Sulfonylureas: glipizide, glyburide, gliclazide, glimepiride.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:b5043b9646709f9583464774": {
+      "id": "edge:b5043b9646709f9583464774",
+      "source": "drug:b9920e1b7e5b39f2e78c05d7",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:d78523b83deb1c0383802d8a",
+          "snippet": "Sulfonylureas: glipizide, glyburide, gliclazide, glimepiride.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:c619a38954c83d0aa5341c93": {
+      "id": "edge:c619a38954c83d0aa5341c93",
+      "source": "drug:ff32a8f71404f74104afb350",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:d78523b83deb1c0383802d8a",
+          "snippet": "Sulfonylureas: glipizide, glyburide, gliclazide, glimepiride.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:9cc29414d8fef56bb56c66cc": {
+      "id": "edge:9cc29414d8fef56bb56c66cc",
+      "source": "drug:1a8451fa9f01b401e369441d",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:246a6ccaaa0088b909e0c421",
+          "snippet": "Meglitinides (glinides): repaglinide, nateglinide.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:23f39512abe59aaa3fb5223b": {
+      "id": "edge:23f39512abe59aaa3fb5223b",
+      "source": "drug:609d47641053658c7201a607",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:246a6ccaaa0088b909e0c421",
+          "snippet": "Meglitinides (glinides): repaglinide, nateglinide.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:6291ae2779216f9241ea6019": {
+      "id": "edge:6291ae2779216f9241ea6019",
+      "source": "drug:852d457b1980798adcd63b61",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:d28b027ee8da329bda7fd5a2",
+          "snippet": "Thiazolidinediones include pioglitazone and rosiglitazone.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:c8211359ccbef2c6aab173d9": {
+      "id": "edge:c8211359ccbef2c6aab173d9",
+      "source": "drug:f1b3b48eee1b3788cade1e32",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:d28b027ee8da329bda7fd5a2",
+          "snippet": "Thiazolidinediones include pioglitazone and rosiglitazone.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:b3c73b20ae7d906379797bb6": {
+      "id": "edge:b3c73b20ae7d906379797bb6",
+      "source": "drug:fadbce4a7f59f949cb7dacb3",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:a8a33473c8f5783fd98c8bf9",
+          "snippet": "First generation sulfonylureas include tolbutamide.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:25117bb29c1e8bd8c7b687d1": {
+      "id": "edge:25117bb29c1e8bd8c7b687d1",
+      "source": "drug:e2313d0538e8911803082fa0",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:ef57ac1b950750c211f0f05a",
+          "snippet": "First generation sulfonylureas include chlorpropamide.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:afe235d401c45106a7d8cba7": {
+      "id": "edge:afe235d401c45106a7d8cba7",
+      "source": "drug:d7e913fc624be953f4fdd462",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:6f4fec80624a7f568c96bd1b",
+          "snippet": "First generation sulfonylureas include tolazamide.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:d316eefc1b7bb9539f6c5f5c": {
+      "id": "edge:d316eefc1b7bb9539f6c5f5c",
+      "source": "drug:3968fdfc8b80de36bbc73a6b",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:94a727767232d5ee33dd1082",
+          "snippet": "First generation sulfonylureas include acetohexamide.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:a0c27cb0bbf3277aa9036c4c": {
+      "id": "edge:a0c27cb0bbf3277aa9036c4c",
+      "source": "drug:53bf47fb02075bf96079cc28",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:1227af2c83b45e915264d815",
+          "snippet": "Alpha-glucosidase inhibitors include acarbose, miglitol, and voglibose.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:4c5e6d6501542cfdb7c5fff6": {
+      "id": "edge:4c5e6d6501542cfdb7c5fff6",
+      "source": "drug:b94f0916d72f9b3c70b2af07",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:1227af2c83b45e915264d815",
+          "snippet": "Alpha-glucosidase inhibitors include acarbose, miglitol, and voglibose.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:211eb4b586e1f0a8d6302805": {
+      "id": "edge:211eb4b586e1f0a8d6302805",
+      "source": "drug:b054fc5f6054a2c26ef4b706",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:1227af2c83b45e915264d815",
+          "snippet": "Alpha-glucosidase inhibitors include acarbose, miglitol, and voglibose.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:b0552e34db21282be5664ce8": {
+      "id": "edge:b0552e34db21282be5664ce8",
+      "source": "drug:38a940db6044d6049db1b8b4",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:a8e916d773f467e7eac7997b",
+          "snippet": "DPP-4 inhibitors include sitagliptin, saxagliptin, linagliptin, and alogliptin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:2992600be32e50342e0d9935": {
+      "id": "edge:2992600be32e50342e0d9935",
+      "source": "drug:c2c22cd628a0262d49f5182c",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:a8e916d773f467e7eac7997b",
+          "snippet": "DPP-4 inhibitors include sitagliptin, saxagliptin, linagliptin, and alogliptin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:ac7b6170ef0c3bed6918d1ed": {
+      "id": "edge:ac7b6170ef0c3bed6918d1ed",
+      "source": "drug:8bc65ad24607c06233330a52",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:a8e916d773f467e7eac7997b",
+          "snippet": "DPP-4 inhibitors include sitagliptin, saxagliptin, linagliptin, and alogliptin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:2b4f468fe5ea46b2415009e5": {
+      "id": "edge:2b4f468fe5ea46b2415009e5",
+      "source": "drug:6704f1a9123f8d599eb0aa0b",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:a8e916d773f467e7eac7997b",
+          "snippet": "DPP-4 inhibitors include sitagliptin, saxagliptin, linagliptin, and alogliptin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:858eb4f00fb48605b329b894": {
+      "id": "edge:858eb4f00fb48605b329b894",
+      "source": "drug:f73b126d404aaf73df92f96b",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:c56cdc824979a8c988e76788",
+          "snippet": "SGLT2 inhibitors include empagliflozin, dapagliflozin, canagliflozin, and ertugliflozin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:c1c1270b6fff7714141c04b4": {
+      "id": "edge:c1c1270b6fff7714141c04b4",
+      "source": "drug:9edc9be1660bf9f7ef200e13",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:c56cdc824979a8c988e76788",
+          "snippet": "SGLT2 inhibitors include empagliflozin, dapagliflozin, canagliflozin, and ertugliflozin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:00af53be946300e6fa86b55f": {
+      "id": "edge:00af53be946300e6fa86b55f",
+      "source": "drug:86dbff6945e26d913f2a45a1",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:c56cdc824979a8c988e76788",
+          "snippet": "SGLT2 inhibitors include empagliflozin, dapagliflozin, canagliflozin, and ertugliflozin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:870d70747cb5cd74ed8b79de": {
+      "id": "edge:870d70747cb5cd74ed8b79de",
+      "source": "drug:ca9b4b24911284a0a026204d",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Drug_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-type2-drugs",
+          "source_title": "Oral Antidiabetic Medications",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+          "page": null,
+          "chunk_id": "ncbi-type2-drugs:demo:c56cdc824979a8c988e76788",
+          "snippet": "SGLT2 inhibitors include empagliflozin, dapagliflozin, canagliflozin, and ertugliflozin.",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "edge:cfedc27d299cfcbf7cd8ef03": {
+      "id": "edge:cfedc27d299cfcbf7cd8ef03",
+      "source": "test_items:281b6c48597a8decc36e3c12",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Test_Items_Disease",
+      "provenance": [
+        {
+          "source_id": "niddk-diagnosis",
+          "source_title": "Diabetes & Prediabetes Tests",
+          "source_url": "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/diabetes/diabetes-prediabetes",
+          "page": null,
+          "chunk_id": "niddk-diagnosis:demo:8d96e4fe85f2a8c590e2e91f",
+          "snippet": "The A1C test is used to screen for and diagnose type 2 diabetes; 6.5% or higher should be repeated for confirmation.",
+          "confidence": 0.98
+        }
+      ]
+    },
+    "edge:4649feeea93674d19224b774": {
+      "id": "edge:4649feeea93674d19224b774",
+      "source": "test_items:2f7f2dfd78fe47a6ba0a0110",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Test_Items_Disease",
+      "provenance": [
+        {
+          "source_id": "niddk-diagnosis",
+          "source_title": "Diabetes & Prediabetes Tests",
+          "source_url": "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/diabetes/diabetes-prediabetes",
+          "page": null,
+          "chunk_id": "niddk-diagnosis:demo:c55cd76799dc33f960505b2f",
+          "snippet": "Fasting plasma glucose is used to screen for and diagnose diabetes; 126 mg/dL or higher should be repeated for confirmation.",
+          "confidence": 0.98
+        }
+      ]
+    },
+    "edge:184cd0ce42db78c99ac1c8dd": {
+      "id": "edge:184cd0ce42db78c99ac1c8dd",
+      "source": "test_items:648db22836a68e35346dace9",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Test_Items_Disease",
+      "provenance": [
+        {
+          "source_id": "niddk-diagnosis",
+          "source_title": "Diabetes & Prediabetes Tests",
+          "source_url": "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/diabetes/diabetes-prediabetes",
+          "page": null,
+          "chunk_id": "niddk-diagnosis:demo:bc374be2483d4b31c51c03f6",
+          "snippet": "The oral glucose tolerance test is used to screen for and diagnose diabetes; 2-hour glucose of 200 mg/dL or higher should be repeated.",
+          "confidence": 0.98
+        }
+      ]
+    },
+    "edge:50e405483a0b754887d44947": {
+      "id": "edge:50e405483a0b754887d44947",
+      "source": "test_items:9fc13f2a590b1593d252ff87",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Test_Items_Disease",
+      "provenance": [
+        {
+          "source_id": "niddk-diagnosis",
+          "source_title": "Diabetes & Prediabetes Tests",
+          "source_url": "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/diabetes/diabetes-prediabetes",
+          "page": null,
+          "chunk_id": "niddk-diagnosis:demo:7dd6b351087f313f4bb570c6",
+          "snippet": "Random plasma glucose is used for diagnosis with classic symptoms of hyperglycemia or hyperglycemic crisis; 200 mg/dL or higher.",
+          "confidence": 0.98
+        }
+      ]
+    },
+    "edge:cf54519a1e537b7a753f0ad5": {
+      "id": "edge:cf54519a1e537b7a753f0ad5",
+      "source": "mechanism:e3d37f4ad7f5401f9b7bceb6",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Pathogenesis_Disease",
+      "provenance": [
+        {
+          "source_id": "niddk-insulin-resistance",
+          "source_title": "Insulin Resistance & Prediabetes",
+          "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance",
+          "page": null,
+          "chunk_id": "niddk-insulin-resistance:demo:d8969404b0df996df64ab4fd",
+          "snippet": "Insulin resistance means that cells in your muscles, fat, and liver don’t respond well to insulin.",
+          "confidence": 0.93
+        }
+      ]
+    },
+    "edge:560ab511294c726b4cc0b819": {
+      "id": "edge:560ab511294c726b4cc0b819",
+      "source": "pathogenesis:33157b657d505b2d9cf4bb48",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Pathogenesis_Disease",
+      "provenance": [
+        {
+          "source_id": "niddk-insulin-resistance",
+          "source_title": "Insulin Resistance & Prediabetes",
+          "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance",
+          "page": null,
+          "chunk_id": "niddk-insulin-resistance:demo:79342a31741d1af3c556e9be",
+          "snippet": "Over time, the pancreas may not make enough insulin to help extra glucose enter cells.",
+          "confidence": 0.92
+        }
+      ]
+    },
+    "edge:f05b608a47915f8f938db6d2": {
+      "id": "edge:f05b608a47915f8f938db6d2",
+      "source": "pathogenesis:56d6886fc8ba37c59d850ac7",
+      "target": "disease:1479dff537b1e1b89ce55847",
+      "type": "Pathogenesis_Disease",
+      "provenance": [
+        {
+          "source_id": "niddk-insulin-resistance",
+          "source_title": "Insulin Resistance & Prediabetes",
+          "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance",
+          "page": null,
+          "chunk_id": "niddk-insulin-resistance:demo:79342a31741d1af3c556e9be",
+          "snippet": "Over time, the pancreas may not make enough insulin to help extra glucose enter cells.",
+          "confidence": 0.9
+        }
+      ]
+    },
+    "edge:492bd9bbbabb711b008a3c2a": {
+      "id": "edge:492bd9bbbabb711b008a3c2a",
+      "source": "anatomy:39cc13caec65b67e76baa636",
+      "target": "disease:dd9c34bc6d89ee6788336f4a",
+      "type": "Anatomy_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-diabetes-overview",
+          "source_title": "Overview: Type 2 Diabetes",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK279509/",
+          "page": null,
+          "chunk_id": "ncbi-diabetes-overview:demo:12e23506ad9ef0aebd49b384",
+          "snippet": "Diabetes may damage small blood vessels and can affect larger blood vessels.",
+          "confidence": 0.86
+        }
+      ]
+    },
+    "edge:ee0eea72724c3b5ab144136a": {
+      "id": "edge:ee0eea72724c3b5ab144136a",
+      "source": "symptom:b232b58e65490bbebf32138a",
+      "target": "disease:dd9c34bc6d89ee6788336f4a",
+      "type": "Symptom_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-diabetes-manifestations",
+          "source_title": "Diabetes Mellitus: Clinical Manifestations",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK242/",
+          "page": null,
+          "chunk_id": "ncbi-diabetes-manifestations:demo:36634a05a13757259f810cb8",
+          "snippet": "Muscle weakness and atrophy may be present with diabetic neuropathic amyotrophy.",
+          "confidence": 0.82
+        }
+      ]
+    },
+    "edge:965432be6d332ac7ff9a446a": {
+      "id": "edge:965432be6d332ac7ff9a446a",
+      "source": "symptom:a36a104ee975b603e023280f",
+      "target": "disease:dd9c34bc6d89ee6788336f4a",
+      "type": "Symptom_Disease",
+      "provenance": [
+        {
+          "source_id": "ncbi-diabetes-manifestations",
+          "source_title": "Diabetes Mellitus: Clinical Manifestations",
+          "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK242/",
+          "page": null,
+          "chunk_id": "ncbi-diabetes-manifestations:demo:36634a05a13757259f810cb8",
+          "snippet": "Muscle weakness and atrophy may be present with diabetic neuropathic amyotrophy.",
+          "confidence": 0.82
+        }
+      ]
+    }
+  },
+  "chunks": {
+    "ncbi-type2-drugs:demo:5e1c2dae7dd54e3c6f21a1d7": {
+      "text": "Oral antidiabetic medications are used in the management of type 2 diabetes.",
+      "provenance": {
+        "source_id": "ncbi-type2-drugs",
+        "source_title": "Oral Antidiabetic Medications",
+        "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+        "page": null,
+        "chunk_id": "ncbi-type2-drugs:demo:5e1c2dae7dd54e3c6f21a1d7",
+        "snippet": "Oral antidiabetic medications are used in the management of type 2 diabetes.",
+        "confidence": 0.94
+      }
+    },
+    "ncbi-type2-drugs:demo:7296979253a34ca0dcde207c": {
+      "text": "Biguanides: metformin.",
+      "provenance": {
+        "source_id": "ncbi-type2-drugs",
+        "source_title": "Oral Antidiabetic Medications",
+        "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+        "page": null,
+        "chunk_id": "ncbi-type2-drugs:demo:7296979253a34ca0dcde207c",
+        "snippet": "Biguanides: metformin.",
+        "confidence": 0.94
+      }
+    },
+    "ncbi-type2-drugs:demo:d78523b83deb1c0383802d8a": {
+      "text": "Sulfonylureas: glipizide, glyburide, gliclazide, glimepiride.",
+      "provenance": {
+        "source_id": "ncbi-type2-drugs",
+        "source_title": "Oral Antidiabetic Medications",
+        "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+        "page": null,
+        "chunk_id": "ncbi-type2-drugs:demo:d78523b83deb1c0383802d8a",
+        "snippet": "Sulfonylureas: glipizide, glyburide, gliclazide, glimepiride.",
+        "confidence": 0.94
+      }
+    },
+    "ncbi-type2-drugs:demo:246a6ccaaa0088b909e0c421": {
+      "text": "Meglitinides (glinides): repaglinide, nateglinide.",
+      "provenance": {
+        "source_id": "ncbi-type2-drugs",
+        "source_title": "Oral Antidiabetic Medications",
+        "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+        "page": null,
+        "chunk_id": "ncbi-type2-drugs:demo:246a6ccaaa0088b909e0c421",
+        "snippet": "Meglitinides (glinides): repaglinide, nateglinide.",
+        "confidence": 0.94
+      }
+    },
+    "ncbi-type2-drugs:demo:d28b027ee8da329bda7fd5a2": {
+      "text": "Thiazolidinediones include pioglitazone and rosiglitazone.",
+      "provenance": {
+        "source_id": "ncbi-type2-drugs",
+        "source_title": "Oral Antidiabetic Medications",
+        "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+        "page": null,
+        "chunk_id": "ncbi-type2-drugs:demo:d28b027ee8da329bda7fd5a2",
+        "snippet": "Thiazolidinediones include pioglitazone and rosiglitazone.",
+        "confidence": 0.94
+      }
+    },
+    "ncbi-type2-drugs:demo:a8a33473c8f5783fd98c8bf9": {
+      "text": "First generation sulfonylureas include tolbutamide.",
+      "provenance": {
+        "source_id": "ncbi-type2-drugs",
+        "source_title": "Oral Antidiabetic Medications",
+        "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+        "page": null,
+        "chunk_id": "ncbi-type2-drugs:demo:a8a33473c8f5783fd98c8bf9",
+        "snippet": "First generation sulfonylureas include tolbutamide.",
+        "confidence": 0.94
+      }
+    },
+    "ncbi-type2-drugs:demo:ef57ac1b950750c211f0f05a": {
+      "text": "First generation sulfonylureas include chlorpropamide.",
+      "provenance": {
+        "source_id": "ncbi-type2-drugs",
+        "source_title": "Oral Antidiabetic Medications",
+        "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+        "page": null,
+        "chunk_id": "ncbi-type2-drugs:demo:ef57ac1b950750c211f0f05a",
+        "snippet": "First generation sulfonylureas include chlorpropamide.",
+        "confidence": 0.94
+      }
+    },
+    "ncbi-type2-drugs:demo:6f4fec80624a7f568c96bd1b": {
+      "text": "First generation sulfonylureas include tolazamide.",
+      "provenance": {
+        "source_id": "ncbi-type2-drugs",
+        "source_title": "Oral Antidiabetic Medications",
+        "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+        "page": null,
+        "chunk_id": "ncbi-type2-drugs:demo:6f4fec80624a7f568c96bd1b",
+        "snippet": "First generation sulfonylureas include tolazamide.",
+        "confidence": 0.94
+      }
+    },
+    "ncbi-type2-drugs:demo:94a727767232d5ee33dd1082": {
+      "text": "First generation sulfonylureas include acetohexamide.",
+      "provenance": {
+        "source_id": "ncbi-type2-drugs",
+        "source_title": "Oral Antidiabetic Medications",
+        "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+        "page": null,
+        "chunk_id": "ncbi-type2-drugs:demo:94a727767232d5ee33dd1082",
+        "snippet": "First generation sulfonylureas include acetohexamide.",
+        "confidence": 0.94
+      }
+    },
+    "ncbi-type2-drugs:demo:1227af2c83b45e915264d815": {
+      "text": "Alpha-glucosidase inhibitors include acarbose, miglitol, and voglibose.",
+      "provenance": {
+        "source_id": "ncbi-type2-drugs",
+        "source_title": "Oral Antidiabetic Medications",
+        "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+        "page": null,
+        "chunk_id": "ncbi-type2-drugs:demo:1227af2c83b45e915264d815",
+        "snippet": "Alpha-glucosidase inhibitors include acarbose, miglitol, and voglibose.",
+        "confidence": 0.94
+      }
+    },
+    "ncbi-type2-drugs:demo:a8e916d773f467e7eac7997b": {
+      "text": "DPP-4 inhibitors include sitagliptin, saxagliptin, linagliptin, and alogliptin.",
+      "provenance": {
+        "source_id": "ncbi-type2-drugs",
+        "source_title": "Oral Antidiabetic Medications",
+        "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+        "page": null,
+        "chunk_id": "ncbi-type2-drugs:demo:a8e916d773f467e7eac7997b",
+        "snippet": "DPP-4 inhibitors include sitagliptin, saxagliptin, linagliptin, and alogliptin.",
+        "confidence": 0.94
+      }
+    },
+    "ncbi-type2-drugs:demo:c56cdc824979a8c988e76788": {
+      "text": "SGLT2 inhibitors include empagliflozin, dapagliflozin, canagliflozin, and ertugliflozin.",
+      "provenance": {
+        "source_id": "ncbi-type2-drugs",
+        "source_title": "Oral Antidiabetic Medications",
+        "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK482386/",
+        "page": null,
+        "chunk_id": "ncbi-type2-drugs:demo:c56cdc824979a8c988e76788",
+        "snippet": "SGLT2 inhibitors include empagliflozin, dapagliflozin, canagliflozin, and ertugliflozin.",
+        "confidence": 0.94
+      }
+    },
+    "niddk-diagnosis:demo:8d96e4fe85f2a8c590e2e91f": {
+      "text": "The A1C test is used to screen for and diagnose type 2 diabetes; 6.5% or higher should be repeated for confirmation.",
+      "provenance": {
+        "source_id": "niddk-diagnosis",
+        "source_title": "Diabetes & Prediabetes Tests",
+        "source_url": "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/diabetes/diabetes-prediabetes",
+        "page": null,
+        "chunk_id": "niddk-diagnosis:demo:8d96e4fe85f2a8c590e2e91f",
+        "snippet": "The A1C test is used to screen for and diagnose type 2 diabetes; 6.5% or higher should be repeated for confirmation.",
+        "confidence": 0.98
+      }
+    },
+    "niddk-diagnosis:demo:c55cd76799dc33f960505b2f": {
+      "text": "Fasting plasma glucose is used to screen for and diagnose diabetes; 126 mg/dL or higher should be repeated for confirmation.",
+      "provenance": {
+        "source_id": "niddk-diagnosis",
+        "source_title": "Diabetes & Prediabetes Tests",
+        "source_url": "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/diabetes/diabetes-prediabetes",
+        "page": null,
+        "chunk_id": "niddk-diagnosis:demo:c55cd76799dc33f960505b2f",
+        "snippet": "Fasting plasma glucose is used to screen for and diagnose diabetes; 126 mg/dL or higher should be repeated for confirmation.",
+        "confidence": 0.98
+      }
+    },
+    "niddk-diagnosis:demo:bc374be2483d4b31c51c03f6": {
+      "text": "The oral glucose tolerance test is used to screen for and diagnose diabetes; 2-hour glucose of 200 mg/dL or higher should be repeated.",
+      "provenance": {
+        "source_id": "niddk-diagnosis",
+        "source_title": "Diabetes & Prediabetes Tests",
+        "source_url": "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/diabetes/diabetes-prediabetes",
+        "page": null,
+        "chunk_id": "niddk-diagnosis:demo:bc374be2483d4b31c51c03f6",
+        "snippet": "The oral glucose tolerance test is used to screen for and diagnose diabetes; 2-hour glucose of 200 mg/dL or higher should be repeated.",
+        "confidence": 0.98
+      }
+    },
+    "niddk-diagnosis:demo:7dd6b351087f313f4bb570c6": {
+      "text": "Random plasma glucose is used for diagnosis with classic symptoms of hyperglycemia or hyperglycemic crisis; 200 mg/dL or higher.",
+      "provenance": {
+        "source_id": "niddk-diagnosis",
+        "source_title": "Diabetes & Prediabetes Tests",
+        "source_url": "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/diabetes/diabetes-prediabetes",
+        "page": null,
+        "chunk_id": "niddk-diagnosis:demo:7dd6b351087f313f4bb570c6",
+        "snippet": "Random plasma glucose is used for diagnosis with classic symptoms of hyperglycemia or hyperglycemic crisis; 200 mg/dL or higher.",
+        "confidence": 0.98
+      }
+    },
+    "niddk-insulin-resistance:demo:d8969404b0df996df64ab4fd": {
+      "text": "Insulin resistance means that cells in your muscles, fat, and liver don’t respond well to insulin.",
+      "provenance": {
+        "source_id": "niddk-insulin-resistance",
+        "source_title": "Insulin Resistance & Prediabetes",
+        "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance",
+        "page": null,
+        "chunk_id": "niddk-insulin-resistance:demo:d8969404b0df996df64ab4fd",
+        "snippet": "Insulin resistance means that cells in your muscles, fat, and liver don’t respond well to insulin.",
+        "confidence": 0.93
+      }
+    },
+    "niddk-insulin-resistance:demo:79342a31741d1af3c556e9be": {
+      "text": "Over time, the pancreas may not make enough insulin to help extra glucose enter cells.",
+      "provenance": {
+        "source_id": "niddk-insulin-resistance",
+        "source_title": "Insulin Resistance & Prediabetes",
+        "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance",
+        "page": null,
+        "chunk_id": "niddk-insulin-resistance:demo:79342a31741d1af3c556e9be",
+        "snippet": "Over time, the pancreas may not make enough insulin to help extra glucose enter cells.",
+        "confidence": 0.92
+      }
+    },
+    "ncbi-diabetes-overview:demo:12e23506ad9ef0aebd49b384": {
+      "text": "Diabetes may damage small blood vessels and can affect larger blood vessels.",
+      "provenance": {
+        "source_id": "ncbi-diabetes-overview",
+        "source_title": "Overview: Type 2 Diabetes",
+        "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK279509/",
+        "page": null,
+        "chunk_id": "ncbi-diabetes-overview:demo:12e23506ad9ef0aebd49b384",
+        "snippet": "Diabetes may damage small blood vessels and can affect larger blood vessels.",
+        "confidence": 0.86
+      }
+    },
+    "ncbi-diabetes-manifestations:demo:36634a05a13757259f810cb8": {
+      "text": "Muscle weakness and atrophy may be present with diabetic neuropathic amyotrophy.",
+      "provenance": {
+        "source_id": "ncbi-diabetes-manifestations",
+        "source_title": "Diabetes Mellitus: Clinical Manifestations",
+        "source_url": "https://www.ncbi.nlm.nih.gov/books/NBK242/",
+        "page": null,
+        "chunk_id": "ncbi-diabetes-manifestations:demo:36634a05a13757259f810cb8",
+        "snippet": "Muscle weakness and atrophy may be present with diabetic neuropathic amyotrophy.",
+        "confidence": 0.82
+      }
+    }
+  }
+}

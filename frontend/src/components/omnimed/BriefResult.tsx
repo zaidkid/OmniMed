@@ -419,15 +419,25 @@ export default function BriefResult({ brief, request }: { brief: Obj; request: u
 
         <div className="br-block">
           <h3><span className="br-num">{SECTIONS.length + 1}</span>Evidence references</h3>
-          <p className="br-m">Reference material, not patient data</p>
+          <p className="br-m">Retrieved source excerpts; relevance scores are search signals, not clinical certainty.</p>
           {evidence.length ? evidence.map((item, i) => {
             const score = typeof item.score === "number" ? item.score : null;
-            const body = String(item.text ?? item.content ?? item.chunk ?? item.passage ?? "");
+            const body = String(item.excerpt ?? item.text ?? item.content ?? item.chunk ?? item.passage ?? "");
+            const location = String(item.page_label ?? item.section ?? "");
+            const matchedTerms = Array.isArray(item.matched_terms)
+              ? item.matched_terms.filter((term): term is string => typeof term === "string")
+              : [];
+            const citationLabel = typeof item.label === "string"
+              ? item.label
+              : typeof item.citation_id === "string"
+                ? `[${item.citation_id}]`
+                : `[E${i + 1}]`;
         const url = typeof item.url === "string" && /^https?:\/\//i.test(item.url) ? item.url : "";
         return (
               <div className="br-ev" key={i}>
-                <b>[{i + 1}] {String(item.title ?? item.source ?? item.document ?? `Reference ${i + 1}`)}</b>
-                {typeof item.source === "string" && <p className="br-m">{item.source}</p>}
+                <b>{citationLabel} {String(item.title ?? item.source ?? item.document ?? `Reference ${i + 1}`)}</b>
+                {(typeof item.source === "string" || location) && <p className="br-m">{[item.source, location].filter((value) => typeof value === "string" && value).join(" · ")}</p>}
+                {!!matchedTerms.length && <p className="br-m">Matched report terms: {matchedTerms.join(", ")}</p>}
                 {body && <p>{body.length > 420 ? `${body.slice(0, 420)}…` : body}</p>}
                 {url && <a href={url} target="_blank" rel="noreferrer">Open source</a>}
                 {score !== null && (

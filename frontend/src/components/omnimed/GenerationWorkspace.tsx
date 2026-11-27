@@ -11,7 +11,7 @@ import type { GenState, LogLine } from "./useBriefStream";
 const STAGES: [string, string][] = [
   ["patient_context", "Patient context"],
   ["evidence_retrieval", "Evidence retrieval"],
-  ["qwen_generation", "Qwen generation"],
+  ["llm_generation", "LLM generation"],
   ["validation", "Validation & safety"],
   ["completed", "Brief preparation"],
 ];
@@ -79,6 +79,7 @@ export default function GenerationWorkspace({ gen, onCancel }: { gen: GenState; 
   const thinkingDone = gen.thinkingSeconds !== null || (!gen.running && hasThinking);
   const open = manual ?? !thinkingDone; // auto-open while thinking, auto-collapse when done
   const finished = !gen.running && gen.started;
+  const responseGenerated = gen.stages.completed?.status === "completed" || (finished && !gen.error && !gen.cancelled);
   const lastLog = gen.logs[gen.logs.length - 1];
 
   const status = gen.running ? { cls: "run", text: `Running · ${elapsed.toFixed(1)} s` }
@@ -133,7 +134,7 @@ export default function GenerationWorkspace({ gen, onCancel }: { gen: GenState; 
 
       <div className="og-live" aria-live="off">{lastLog ? lastLog.text : "Connecting to the backend…"}</div>
 
-      {hasThinking ? (
+      {!responseGenerated && (hasThinking ? (
         <div className="og-think">
           <button type="button" className="og-think-btn" aria-expanded={open} aria-controls="og-think-body"
             onClick={() => setManual(!open)}>
@@ -152,7 +153,7 @@ export default function GenerationWorkspace({ gen, onCancel }: { gen: GenState; 
         <p className="og-think-none"><BrainCircuit size={14} /> No separate reasoning was shown for this run.</p>
       ) : (
         <p className="og-think-none og-shimmer"><BrainCircuit size={14} /> Waiting for model output…</p>
-      )}
+      ))}
 
       {gen.error && <div className="og-error" role="alert"><AlertCircle size={15} /> {gen.error}</div>}
 

@@ -66,8 +66,11 @@ function applyEvent(s: GenState, e: Obj, now: number): GenState {
     case "progress": {
       const u = e as unknown as Stage;
       const stages = { ...s.stages, [u.stage]: u };
+      if (u.stage === "completed" && u.status === "completed") {
+        return { ...s, stages, thinking: "", thinkStart: null, thinkingSeconds: null, thinkingLimited: false };
+      }
       // A new generation attempt invalidates later stages from the previous attempt.
-      if (u.stage === "qwen_generation" && (u.status === "active" || u.status === "retrying")) {
+      if (u.stage === "llm_generation" && (u.status === "active" || u.status === "retrying")) {
         delete stages.validation;
         delete stages.completed;
       }

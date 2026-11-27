@@ -5,6 +5,7 @@ import hashlib
 import io
 import json
 import logging
+import re
 import time
 import uuid
 
@@ -45,6 +46,8 @@ from app.services.models.models import (
 from app.services.patient.patient_state import (
     build_patient_state,
 )
+from app.services.patient.knowledge_graph import build_patient_graph
+from app.services import graph_rag
 
 from app.services.evidence.document_service import (
     extract_document_with_info,
@@ -89,8 +92,9 @@ from app.services.reassessment import reassess
 
 from app.services.ai.llm import (
     check_ollama, ollama_model_status, ollama_warm_up, ollama_generate,
-    ollama_generate_from_image,
+    ollama_generate_from_image, ollama_generate_stream,
 )
+from app.services.evidence.vector_store import index_chunks
 
 
 log = logging.getLogger(__name__)
@@ -484,6 +488,308 @@ def get_patient(
         )
 
     return state
+
+
+@router.get("/patients/{patient_id}/knowledge-graph")
+def patient_knowledge_graph(patient_id: str):
+    """Return patient relationships with guideline passages retrieved from RAG."""
+    saved = db.get_patient(patient_id)
+    if not saved:
+        raise HTTPException(status_code=404, detail="Patient not found. Save a patient state first.")
+    state = saved.get("state_json") or {}
+    terms = [str(value).strip() for value in [*(state.get("conditions") or []), *(state.get("medications") or [])] if str(value).strip()]
+    evidence = []
+    if terms:
+        try:
+            evidence = search_evidence(" ".join(terms), top_k=8)
+        except Exception:
+            log.exception("Knowledge graph evidence retrieval failed for patient %s", patient_id)
+    return build_patient_graph(patient_id, state, evidence)
+
+
+@router.post("/patients/knowledge-graph")
+def preview_patient_knowledge_graph(request: dict[str, Any]):
+    """Build a graph from the current upload/review state without persisting it."""
+    patient_id = str(request.get("patient_id") or "").strip()
+    if not patient_id:
+        raise HTTPException(status_code=422, detail="patient_id is required")
+    terms = [str(value).strip() for value in [*(request.get("conditions") or []), *(request.get("medications") or [])] if str(value).strip()]
+    evidence = []
+    if terms:
+        try:
+            evidence = search_evidence(" ".join(terms), top_k=8)
+        except Exception:
+            log.exception("Knowledge graph evidence retrieval failed for uploaded patient %s", patient_id)
+    return build_patient_graph(patient_id, request, evidence)
+
+
+@router.post("/graph-rag/query")
+async def graph_rag_query(request: dict[str, Any]):
+    query = str(request.get("query") or "").strip()
+    if not query or len(query) > 2000:
+        raise HTTPException(status_code=422, detail="Enter a question (up to 2,000 characters).")
+    try:
+        chunks = search_evidence(query, top_k=6)
+    except Exception:
+        log.exception("GraphRAG text retrieval failed")
+        chunks = []
+    graph_rag.ensure_seeded()
+    retrieved = graph_rag.query_graph(query, chunks)
+    if not retrieved["context"].strip():
+        return {"answer": "Insufficient evidence was found in the indexed text and knowledge graph to answer this question.", "citations": [], "graph": retrieved["graph"], "disclaimer": "Educational information only; not a diagnosis or treatment recommendation."}
+    prompt = _graph_answer_prompt(query, retrieved["context"])
+    try:
+        raw = await ollama_generate(prompt, GRAPH_ANSWER_SCHEMA, num_predict=420, temperature=0.0)
+        answer = _ground_graph_answer(str(json.loads(raw).get("answer", "")), retrieved["citations"])
+        if not answer or answer.lower().startswith("insufficient evidence"):
+            answer = _fallback_graph_answer(query, retrieved)
+    except Exception:
+        log.exception("GraphRAG answer generation failed")
+        answer = _fallback_graph_answer(query, retrieved)
+    return {"answer": answer, "citations": retrieved["citations"], "graph": retrieved["graph"], "disclaimer": "Educational information only; not a diagnosis or treatment recommendation. Verify evidence and applicability with a qualified clinician."}
+
+
+def _graph_answer_prompt(query: str, context: str) -> str:
+    return (
+        "Answer the medical question using ONLY the retrieved facts below. Every factual claim must have inline numbered citations in the exact format [1]. "
+        "Never invent a citation, dosage, diagnosis, or treatment recommendation. If context does not support an answer, say 'Insufficient evidence.' "
+        "Keep the answer concise and mention uncertainty. This is educational decision support, not personalized care.\n\n"
+        f"Question: {query}\n\nRetrieved context (citation numbers are authoritative):\n{context}\n\nAnswer with numbered citations:"
+    )
+
+
+GRAPH_ANSWER_SCHEMA = {"type": "object", "properties": {"answer": {"type": "string"}}, "required": ["answer"]}
+
+
+def _ground_graph_answer(raw: str, citations: list[dict[str, Any]]) -> str:
+    allowed = {str(c["id"]) for c in citations}
+    text_value = re.sub(r"\[(\d+)\]", lambda m: m.group(0) if m.group(1) in allowed else "", raw.strip())
+    cited = [sentence.strip() for sentence in re.split(r"(?<=[.!?])\s+|\n+", text_value)
+             if sentence.strip() and re.search(r"\[\d+\]", sentence)]
+    return " ".join(cited) if cited else ""
+
+
+def _fallback_graph_answer(query: str, retrieved: dict[str, Any]) -> str:
+    """Turn retrieved graph facts into cited statements when the model omits citations."""
+    graph = retrieved.get("graph") or {}
+    nodes = {node.get("id"): node for node in graph.get("nodes", [])}
+    citations = {str(item.get("id")): item for item in retrieved.get("citations", [])}
+    q = query.casefold()
+    wants_drugs = any(term in q for term in ("drug", "medication", "medicine", "treat", "therapy"))
+    wants_tests = any(term in q for term in ("diagnos", "test", "hba1c", "glucose", "screen"))
+    edges = graph.get("edges", [])
+    drug_edges = [e for e in edges if e.get("type") == "Drug_Disease"]
+    test_edges = [e for e in edges if e.get("type") == "Test_Items_Disease"]
+    chosen = []
+    if wants_drugs:
+        chosen.extend(drug_edges)
+    if wants_tests:
+        chosen.extend(test_edges)
+    if not chosen:
+        chosen = edges[:8]
+
+    lines: list[str] = []
+    if drug_edges and (wants_drugs or not wants_tests):
+        facts = []
+        for edge in drug_edges[:12]:
+            ids = [str(value) for value in edge.get("citation_ids", []) if str(value) in citations]
+            if ids:
+                facts.append(f"{nodes.get(edge.get('source'), {}).get('label', 'Drug')} [{ids[0]}]")
+        if facts:
+            lines.append("The retrieved graph links these listed medicines with the disease; this is a source association, not a patient-specific treatment recommendation: " + ", ".join(facts) + ".")
+
+    if test_edges and (wants_tests or not wants_drugs):
+        for edge in test_edges[:5]:
+            source = nodes.get(edge.get("source"), {}).get("label", "A glucose test")
+            ids = [str(value) for value in edge.get("citation_ids", []) if str(value) in citations]
+            if not ids:
+                continue
+            citation = citations[ids[0]]
+            snippet = str(citation.get("snippet") or "").strip()
+            target = nodes.get(edge.get("target"), {}).get("label", "diabetes")
+            lines.append(f"The graph links {source} to {target}; retrieved source text: {snippet} [{ids[0]}]")
+
+    if not lines:
+        for edge in chosen[:5]:
+            ids = [str(value) for value in edge.get("citation_ids", []) if str(value) in citations]
+            if not ids:
+                continue
+            source = nodes.get(edge.get("source"), {}).get("label", "Retrieved entity")
+            target = nodes.get(edge.get("target"), {}).get("label", "related entity")
+            lines.append(f"Retrieved graph relationship: {source} —{edge.get('type')}→ {target} [{ids[0]}].")
+
+    if not lines:
+        for chunk in (retrieved.get("chunks") or [])[:3]:
+            cid = str(chunk.get("citation_id", ""))
+            text_value = str(chunk.get("text", "")).strip()
+            if cid in citations and text_value:
+                excerpt = text_value[:260].rsplit(" ", 1)[0]
+                lines.append(f"Retrieved source excerpt: {excerpt} [{cid}]")
+    return " ".join(lines) if lines else "Insufficient evidence to answer this question from retrieved sources."
+
+
+@router.post("/graph-rag/query/stream")
+async def graph_rag_query_stream(request: dict[str, Any]):
+    query = str(request.get("query") or "").strip()
+    if not query or len(query) > 2000:
+        raise HTTPException(status_code=422, detail="Enter a question (up to 2,000 characters).")
+
+    patient_context = request.get("patient_context")
+    patient_text = str(patient_context.get("text") or "").strip()[:14000] if isinstance(patient_context, dict) else ""
+
+    async def events():
+        try:
+            if patient_text:
+                patient_id = str(patient_context.get("patient_id") or "unknown")
+                source_title = str(patient_context.get("source_title") or "Uploaded patient report")[:255]
+                patient_citation = {
+                    "id": 1,
+                    "source_id": "patient-report:" + patient_id,
+                    "source_title": source_title,
+                    "source_url": "",
+                    "page": None,
+                    "chunk_id": "patient-report:" + patient_id + ":upload",
+                    "snippet": patient_text[:300],
+                    "confidence": 1.0,
+                }
+                retrieved = {
+                    "citations": [patient_citation],
+                    "graph": {"nodes": [], "edges": []},
+                    "context": "[1] Uploaded patient report text: " + patient_text,
+                }
+            else:
+                try:
+                    chunks = search_evidence(query, top_k=6)
+                except Exception:
+                    log.exception("GraphRAG streamed text retrieval failed")
+                    chunks = []
+                graph_rag.ensure_seeded()
+                retrieved = graph_rag.query_graph(query, chunks)
+            base = {"citations": retrieved["citations"], "graph": retrieved["graph"], "disclaimer": "Educational information only; not a diagnosis or treatment recommendation. Verify evidence and applicability with a qualified clinician.", "model": OLLAMA_MODEL, "generation_status": "ollama"}
+            if not retrieved["context"].strip():
+                base["answer"] = "Insufficient evidence was found in the indexed text and knowledge graph to answer this question."
+                base["generation_status"] = "fallback"
+                yield f"data: {json.dumps({'type': 'result', 'result': base})}\n\n"
+                return
+            yield f"data: {json.dumps({'type': 'meta', 'result': base})}\n\n"
+            prompt = _graph_answer_prompt(query, retrieved["context"])
+            parts = []
+            async for item in ollama_generate_stream(prompt, GRAPH_ANSWER_SCHEMA, num_predict=420, answer_num_predict=420, temperature=0.0, think=False):
+                if item.get("type") == "response":
+                    parts.append(str(item.get("text") or ""))
+                    yield f"data: {json.dumps({'type': 'token', 'text': item.get('text', '')})}\n\n"
+            try:
+                raw = json.loads("".join(parts)).get("answer", "")
+            except (json.JSONDecodeError, AttributeError):
+                raw = ""
+            base["answer"] = _ground_graph_answer(str(raw), retrieved["citations"])
+            if not base["answer"] or base["answer"].lower().startswith("insufficient evidence"):
+                if patient_text:
+                    base["answer"] = "The uploaded report states: " + patient_text[:260].rsplit(" ", 1)[0] + " [1]"
+                else:
+                    base["answer"] = _fallback_graph_answer(query, retrieved)
+                base["generation_status"] = "fallback"
+            yield f"data: {json.dumps({'type': 'result', 'result': base})}\n\n"
+        except Exception as exc:
+            log.exception("GraphRAG streamed answer failed")
+            if "retrieved" in locals() and retrieved.get("context"):
+                if patient_text:
+                    base["answer"] = "The uploaded report states: " + patient_text[:260].rsplit(" ", 1)[0] + " [1]"
+                else:
+                    base["answer"] = _fallback_graph_answer(query, retrieved)
+                base["generation_status"] = "fallback"
+                yield f"data: {json.dumps({'type': 'result', 'result': base})}\n\n"
+            else:
+                yield f"data: {json.dumps({'type': 'error', 'detail': type(exc).__name__})}\n\n"
+
+    return StreamingResponse(events(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@router.get("/graph-rag/node/{node_id}")
+def graph_rag_node(node_id: str):
+    node = graph_rag.detail(node_id)
+    if not node:
+        raise HTTPException(status_code=404, detail="Graph node not found")
+    return node
+
+
+@router.get("/graph-rag/node/{node_id}/neighbors")
+def graph_rag_neighbors(node_id: str):
+    if not graph_rag.detail(node_id):
+        raise HTTPException(status_code=404, detail="Graph node not found")
+    return graph_rag.neighbors(node_id)
+
+
+@router.post("/graph-rag/ingest")
+async def graph_rag_ingest(
+    file: UploadFile = File(...),
+    source_title: str = Form(""),
+    source_url: str = Form(""),
+):
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in {".pdf", ".md", ".markdown", ".txt"}:
+        raise HTTPException(status_code=415, detail="Upload a PDF, Markdown, or TXT reference.")
+    raw = await file.read()
+    if len(raw) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Reference exceeds the 20 MB limit.")
+    title = source_title.strip() or Path(file.filename or "Reference").stem
+    source_id = hashlib.sha256(f"{title}|{source_url}|".encode() + raw).hexdigest()[:24]
+    if suffix == ".pdf":
+        import fitz
+        with fitz.open(stream=raw, filetype="pdf") as pdf:
+            pages = [(i + 1, p.get_text("text").strip()) for i, p in enumerate(pdf) if p.get_text("text").strip()]
+    else:
+        pages = [(None, raw.decode("utf-8", errors="replace"))]
+    pieces: list[tuple[int | None, str, int]] = []
+    for page, text_value in pages:
+        words = text_value.split()
+        start = 0
+        while start < len(words):
+            end = min(start + 575, len(words))
+            pieces.append((page, " ".join(words[start:end]), len(pieces)))
+            if end == len(words): break
+            start = end - 90
+    if not pieces:
+        raise HTTPException(status_code=422, detail="No readable text was found in the reference.")
+    store = graph_rag.load_store()
+    vector_chunks = []
+    extracted = 0
+    for page, chunk_text, index in pieces:
+        chunk_id = f"{source_id}:{index}"
+        prov = graph_rag.provenance(source_id, title, source_url, page, chunk_id, chunk_text[:300], .95)
+        store["chunks"][chunk_id] = {"text": chunk_text, "provenance": prov}
+        vector_chunks.append({"id": int(hashlib.sha256(chunk_id.encode()).hexdigest()[:15], 16), "document_id": source_id,
+                              "chunk_index": index, "text": chunk_text, "title": title, "source": file.filename or title,
+                              "metadata": {"document_type": "clinical_reference", "url": source_url, "source_id": source_id, "page": page, "chunk_id": chunk_id},
+                              "document_type": "clinical_reference", "clinical_topics": [], "page": page, "url": source_url})
+        schema = {"type": "object", "properties": {"triples": {"type": "array", "items": {"type": "object", "properties": {
+            "subject": {"type": "string"}, "subject_type": {"type": "string", "enum": sorted(graph_rag.NODE_TYPES)},
+            "relationship": {"type": "string", "enum": sorted(graph_rag.EDGE_TYPES)}, "object": {"type": "string"},
+            "object_type": {"type": "string", "enum": sorted(graph_rag.NODE_TYPES)}, "snippet": {"type": "string"}, "confidence": {"type": "number"}},
+            "required": ["subject", "subject_type", "relationship", "object", "object_type", "snippet", "confidence"]}}}, "required": ["triples"]}
+        prompt = ("Extract only explicit clinical facts that match the allowed entity and relationship schema. Do not infer.")
+        try:
+            output = await ollama_generate(f"{prompt}\nJSON schema: {json.dumps(schema)}\nPassage:\n{chunk_text}", schema, num_predict=700, temperature=0.0)
+            triples = json.loads(output).get("triples", [])
+        except Exception:
+            log.exception("Graph triple extraction failed for chunk %s", chunk_id)
+            continue
+        for triple in triples:
+            snippet = str(triple.get("snippet", "")).strip()
+            if not snippet or _normalize_graph_text(snippet) not in _normalize_graph_text(chunk_text):
+                continue
+            try:
+                graph_rag.add_fact(store, str(triple["subject"]), triple["subject_type"], triple["relationship"], str(triple["object"]), triple["object_type"], graph_rag.provenance(source_id, title, source_url, page, chunk_id, snippet, triple.get("confidence", .5)))
+                extracted += 1
+            except (KeyError, ValueError):
+                continue
+    index_chunks(vector_chunks)
+    graph_rag.save_store(store)
+    return {"source_id": source_id, "source_title": title, "chunks_indexed": len(pieces), "triples_added": extracted, "idempotent": True}
+
+
+def _normalize_graph_text(value: str) -> str:
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", value.casefold()).split())
 
 
 @router.post("/documents/upload")
@@ -914,18 +1220,147 @@ async def extract_reassessment_facts(request: ReassessmentExtractRequest):
         "required": ["conditions", "medications", "allergies", "symptoms", "vitals", "labs", "clinical_notes"],
     }
     prompt = (
-        "Extract only explicit patient facts and changes stated in this report. Do not infer or diagnose. "
-        "Do not copy generic reference ranges as patient results. Preserve medication dose, lab units, and values. "
-        "Leave absent facts empty. These are unverified proposals for clinician review. Return JSON only.\n\n"
+        "Extract EVERY patient-specific fact explicitly reported below, even when the report does not call it new "
+        "or changed. The comparison step will determine what changed. Include all measured lab results and vitals, "
+        "with exact values and units. Exclude reference ranges, examples, and general education text. Do not infer, "
+        "diagnose, or convert values. Preserve medication doses. Leave absent categories empty. These are proposals "
+        "that a clinician must verify. Return JSON only.\n\n"
         f"Report: {request.filename}\n{request.extracted_text[:24000]}"
     )
+    fallback = _extract_labeled_reassessment_facts(request.extracted_text)
     try:
         raw = await ollama_generate(prompt, schema, num_predict=500, temperature=0.0)
         facts = json.loads(raw)
     except Exception as exc:
         log.exception("Reassessment report extraction failed")
-        raise HTTPException(status_code=502, detail=f"Could not extract report facts ({type(exc).__name__}).") from exc
-    return {**facts, "review_required": True, "extraction_source": "llm_report_text"}
+        fallback = _sanitize_reassessment_facts(fallback, request.extracted_text)
+        return {**fallback, "review_required": True, "extraction_source": "labeled_text_fallback",
+                "extraction_warning": f"Model extraction unavailable ({type(exc).__name__}); only explicitly labeled values were proposed."}
+    facts = _sanitize_reassessment_facts(facts, request.extracted_text)
+    return {
+        **facts,
+        "review_required": True,
+        "extraction_source": "source_checked_model_proposals",
+        "extraction_warning": "Only source-supported proposals were kept. Ambiguous multi-value lab rows may be omitted; verify them against the report and enter the current result manually.",
+    }
+
+
+def _sanitize_reassessment_facts(facts: dict[str, Any], source: str) -> dict[str, Any]:
+    """Reject model proposals that are not directly supported by the uploaded text."""
+    def normalized(value: Any) -> str:
+        return " ".join(re.sub(r"[^a-z0-9]+", " ", str(value).casefold()).split())
+
+    source_normalized = normalized(source)
+    metadata = re.compile(r"(?i)\b(patient\s*id|related report|follow[ -]?up date|age\s*/\s*sex|known conditions|recorded medication|reference range|information still missing)\b")
+
+    def supported(value: Any, limit: int = 180) -> bool:
+        candidate = str(value or "").strip()
+        key = normalized(candidate)
+        return bool(key and len(candidate) <= limit and key in source_normalized and not metadata.search(candidate))
+
+    clean: dict[str, Any] = {"conditions": [], "medications": [], "allergies": [], "symptoms": [],
+                              "vitals": {}, "labs": [], "clinical_notes": []}
+    for key in ("conditions", "medications", "allergies", "symptoms", "clinical_notes"):
+        values = facts.get(key, [])
+        if not isinstance(values, list):
+            continue
+        for value in values:
+            if supported(value, 240 if key == "clinical_notes" else 120):
+                candidate = str(value).strip()
+                if candidate not in clean[key]:
+                    clean[key].append(candidate)
+
+    raw_vitals = facts.get("vitals", {})
+    if isinstance(raw_vitals, dict):
+        for key, value in raw_vitals.items():
+            candidate = str(value or "").strip()
+            # Vitals must be a single measured value; reject prose or merged cells.
+            if key == "blood_pressure":
+                valid = bool(re.fullmatch(r"\d{2,3}\s*/\s*\d{2,3}(?:\s*mm\s*Hg)?", candidate, re.I))
+            else:
+                valid = bool(re.fullmatch(r"[<>]?\s*\d+(?:\.\d+)?\s*(?:%|bpm|mm\s*Hg|°?[CF]|mmol/L|breaths/min)?", candidate, re.I))
+            if valid and supported(candidate, 40):
+                clean["vitals"][str(key)] = candidate
+
+    raw_labs = facts.get("labs", [])
+    if isinstance(raw_labs, list):
+        for item in raw_labs:
+            if not isinstance(item, dict):
+                continue
+            name = str(item.get("name", "")).strip()
+            value = str(item.get("value", "")).strip()
+            unit = str(item.get("unit", "")).strip()
+            # A result must be one scalar. This drops merged cells such as "86 72"
+            # or "7.4 Not repeated", which cannot safely represent a result.
+            if (not supported(name, 80) or metadata.search(name)
+                    or not re.fullmatch(r"[<>]?\s*\d+(?:\.\d+)?", value)
+                    or len(unit) > 24 or re.search(r"[<>|\n]", unit)):
+                continue
+            # Require an unambiguous source row: a lab name and exactly one
+            # numeric result on the same extracted line. Multi-column rows
+            # (for example prior/current values) must be entered manually.
+            matching_rows = [line for line in source.splitlines()
+                             if normalized(name) in normalized(line)
+                             and re.search(rf"(?<!\d){re.escape(value)}(?!\d)", line)]
+            if not any(len(re.findall(r"(?<![A-Za-z])\d+(?:\.\d+)?", line)) == 1 for line in matching_rows):
+                continue
+            clean["labs"].append({"name": name, "value": value.replace(" ", ""), "unit": unit})
+
+    return clean
+
+
+def _extract_labeled_reassessment_facts(text: str) -> dict[str, Any]:
+    """Conservative fallback for explicit labels and tabular lab rows."""
+    facts: dict[str, Any] = {"conditions": [], "medications": [], "allergies": [], "symptoms": [],
+                             "vitals": {}, "labs": [], "clinical_notes": []}
+    list_labels = {
+        "condition": "conditions", "conditions": "conditions", "diagnosis": "conditions", "diagnoses": "conditions",
+        "medication": "medications", "medications": "medications", "current medications": "medications",
+        "allergy": "allergies", "allergies": "allergies", "symptom": "symptoms", "symptoms": "symptoms",
+    }
+    vital_labels = {
+        "bp": "blood_pressure", "blood pressure": "blood_pressure", "heart rate": "heart_rate", "pulse": "heart_rate",
+        "spo2": "spo2", "oxygen saturation": "spo2", "temperature": "temperature",
+        "respiratory rate": "respiratory_rate", "resp rate": "respiratory_rate",
+    }
+    number = r"([<>]?\s*\d+(?:\.\d+)?)"
+    for raw in text.splitlines():
+        line = re.sub(r"^\s*\[Page\s+\d+\]\s*", "", raw).strip()
+        line = re.sub(r"^\s*Row\s+\d+\s*:\s*", "", line, flags=re.I)
+        if not line or re.search(r"(?i)reference\s*range|normal\s*range|desirable\s*level|example", line):
+            continue
+        labeled = re.match(r"(?i)^\s*([a-z ]{2,32})\s*:\s*(.+)$", line)
+        if labeled:
+            label = " ".join(labeled.group(1).casefold().split())
+            value = labeled.group(2).strip()
+            if label in list_labels:
+                facts[list_labels[label]].extend([part.strip() for part in re.split(r"[,;]", value) if part.strip()])
+                continue
+            if label in vital_labels:
+                if vital_labels[label] == "blood_pressure":
+                    match = re.search(r"(\d{2,3}\s*/\s*\d{2,3})(?:\s*(mm\s*Hg))?", value, re.I)
+                    if match:
+                        facts["vitals"][vital_labels[label]] = " ".join(part for part in (match.group(1), match.group(2)) if part)
+                    continue
+                match = re.search(number + r"\s*([a-zA-Z%/µμ0-9.^_-]*)", value)
+                if match:
+                    facts["vitals"][vital_labels[label]] = (match.group(1) + " " + match.group(2)).strip()
+                continue
+            value_match = re.search("^" + number + r"\s*([a-zA-Z%/µμ0-9.^_-]*)\s*$", value)
+            if value_match and label not in {"age", "sex", "date", "report date", "patient id", "reference range"}:
+                facts["labs"].append({"name": labeled.group(1).strip(), "value": value_match.group(1).replace(" ", ""), "unit": value_match.group(2).strip()})
+                continue
+        cells = [cell.strip() for cell in line.split("|")]
+        if len(cells) >= 2 and re.search(number, cells[1]):
+            name = re.sub(r"[^A-Za-z0-9 /()._-]", "", cells[0]).strip()
+            value_match = re.search(number, cells[1])
+            if name and value_match and len(name) <= 50:
+                facts["labs"].append({"name": name, "value": value_match.group(1).replace(" ", ""), "unit": cells[2] if len(cells) > 2 else ""})
+            continue
+        table_row = re.match(r"^([A-Za-z][A-Za-z0-9 /()._-]{1,40}?)\s+" + number + r"\s*([a-zA-Z%/µμ0-9.^_-]*)\s*$", line)
+        if table_row and not re.search(r"(?i)page|date|age|score|phone|patient|record|id", table_row.group(1)):
+            facts["labs"].append({"name": table_row.group(1).strip(), "value": table_row.group(2).replace(" ", ""), "unit": table_row.group(3).strip()})
+    return facts
 
 
 @router.post("/documents/vision-summarize")

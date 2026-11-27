@@ -31,6 +31,7 @@ const nav = [
   ["Reassessment", "/reassessment", RefreshCw],
   ["Documents", "/documents", FileText],
   ["Evidence", "/evidence", BookOpen],
+  ["Knowledge Graph", "/knowledge-graph", Eye],
   ["Settings", "/settings", Settings],
 ] as const;
 
